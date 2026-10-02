@@ -1,12 +1,8 @@
-import os
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
-from pathlib import Path
-from uuid import uuid4
 
 import pytest
-from alembic.config import Config
-from sqlalchemy import create_engine, inspect, select, text
+from sqlalchemy import inspect, select, text
 from sqlalchemy.exc import DataError, IntegrityError
 from sqlalchemy.orm import selectinload
 from sqlalchemy.orm.exc import StaleDataError
@@ -16,45 +12,7 @@ from app.core.config import Settings
 from app.db.base import Base
 from app.db.session import create_database_engine, create_session_factory, get_db
 from app.models import Client, Order, OrderItem, OrderStatusHistory, User, UserRole
-
-ROOT = Path(__file__).resolve().parents[1]
-
-
-@pytest.fixture
-def db_engine():
-    url = os.environ.get("TEST_DATABASE_URL")
-    if not url:
-        pytest.skip("Set TEST_DATABASE_URL to run PostgreSQL integration tests")
-    settings = Settings(_env_file=None, database_url=url)
-    admin_engine = create_database_engine(settings)
-    schema = "test_" + uuid4().hex
-    with admin_engine.begin() as connection:
-        connection.execute(text(f'CREATE SCHEMA "{schema}"'))
-    engine = create_engine(
-        url,
-        hide_parameters=True,
-        connect_args={"options": f"-c timezone=UTC -c search_path={schema}"},
-    )
-    try:
-        yield engine
-    finally:
-        engine.dispose()
-        with admin_engine.begin() as connection:
-            connection.execute(text(f'DROP SCHEMA "{schema}" CASCADE'))
-        admin_engine.dispose()
-
-
-def migration_config(connection):
-    config = Config(str(ROOT / "alembic.ini"))
-    config.attributes["connection"] = connection
-    return config
-
-
-@pytest.fixture
-def migrated_engine(db_engine):
-    with db_engine.begin() as connection:
-        command.upgrade(migration_config(connection), "head")
-    return db_engine
+from tests.conftest import migration_config
 
 
 @pytest.fixture

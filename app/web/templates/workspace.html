@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Робочий простір — {{ app_name }}{% endblock %}
+{% block content %}
+<section class="welcome-panel" aria-labelledby="workspace-title">
+  <p class="welcome-label">Вхід виконано</p>
+  <h1 id="workspace-title">Робочий простір</h1>
+  <p class="welcome-description">Вітаємо, {{ current_user.first_name }} {{ current_user.last_name }}.</p>
+  <p class="availability-note">Керування клієнтами, замовленнями та показники роботи будуть доступні після налаштування відповідних модулів.</p>
+  <dl class="workspace-settings">
+    <div><dt>Валюта</dt><dd>{{ currency }}</dd></div>
+    <div><dt>Часовий пояс</dt><dd>{{ timezone }}</dd></div>
+  </dl>
+</section>
+{% endblock %}

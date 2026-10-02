@@ -108,7 +108,38 @@ h1 {
   overflow-wrap: anywhere;
 }
 
-a:focus-visible {
+a:focus-visible,
+button:focus-visible,
+input:focus-visible {
   outline: 3px solid var(--app-accent);
   outline-offset: 4px;
+}
+
+.app-nav, .nav-links, .session-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+}
+
+.app-brand { margin-right: auto; }
+.nav-links a[aria-current="page"] { font-weight: 700; }
+.user-label { overflow-wrap: anywhere; }
+.role-label { display: block; color: var(--app-muted); font-size: 0.875rem; }
+.session-controls form { margin: 0; }
+.login-panel { max-width: 500px; margin-inline: auto; }
+.form-field { margin-block: 1.25rem; }
+.form-field label { display: block; margin-bottom: 0.4rem; font-weight: 600; }
+.form-field input { width: 100%; box-sizing: border-box; padding: 0.6rem; border: 1px solid #8192a7; border-radius: 0.4rem; font: inherit; }
+.field-error { color: #a31626; margin-top: 0.4rem; }
+.btn { cursor: pointer; padding: 0.6rem 1rem; border: 1px solid var(--app-accent); border-radius: 0.4rem; font: inherit; }
+.btn-primary { background: var(--app-accent); color: white; }
+.btn-outline-secondary { background: white; color: var(--app-ink); }
+.alert { padding: 1rem; border-radius: 0.4rem; }
+.alert-danger { background: #fff0f1; color: #a31626; }
+
+@media (max-width: 600px) {
+  .app-nav { align-items: flex-start; }
+  .app-brand { flex-basis: 100%; }
+  .session-controls { width: 100%; justify-content: space-between; }
 }
