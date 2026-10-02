@@ -16,3 +16,7 @@ class InvalidCredentials(DomainError):
 
 class SeedConflict(DomainError):
     status_code = 409
+
+
+class NotFound(DomainError):
+    status_code = 404
