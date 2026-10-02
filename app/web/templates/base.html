@@ -17,6 +17,7 @@
         {% if current_user %}
         <div class="nav-links">
           <a href="{{ url_for('dashboard') }}"{% if active_page == 'dashboard' %} aria-current="page"{% endif %}>Робочий простір</a>
+          <a href="{{ url_for('clients') }}"{% if active_page == 'clients' %} aria-current="page"{% endif %}>Клієнти</a>
           {% if current_user.role.value == 'ADMIN' %}<a href="{{ url_for('users') }}"{% if active_page == 'users' %} aria-current="page"{% endif %}>Адміністрування</a>{% endif %}
         </div>
         <div class="session-controls">

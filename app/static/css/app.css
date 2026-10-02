@@ -143,3 +143,11 @@ input:focus-visible {
   .app-brand { flex-basis: 100%; }
   .session-controls { width: 100%; justify-content: space-between; }
 }
+/* Shared client and order layouts. */
+.page-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.5rem; }
+.entity-form { max-width: 52rem; }
+.search-form { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; margin-bottom: 1rem; }
+.search-form .form-control { flex: 1 1 15rem; }
+.search-form .form-select { width: auto; }
+.detail-list dd { white-space: pre-wrap; overflow-wrap: anywhere; }
+.table td { overflow-wrap: anywhere; }

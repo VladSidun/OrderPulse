@@ -79,7 +79,7 @@ def test_application_factories_keep_settings_separate():
 
 
 def test_business_routes_are_not_exposed_before_implementation(client):
-    for path in ("/orders", "/clients", "/users/new", "/ready", "/api/v1/orders"):
+    for path in ("/orders", "/users/new", "/ready", "/api/v1/orders"):
         assert client.get(path).status_code == 404
 
 
