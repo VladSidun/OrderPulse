@@ -4,7 +4,22 @@ from fastapi import Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
+from app.core.business_time import display_time
+
 templates = Jinja2Templates(directory=Path(__file__).resolve().parent / "templates")
+templates.env.filters["business_time"] = display_time
+templates.env.filters["money"] = lambda value: format(value, ".2f")
+STATUS_LABELS = {
+    "NEW": "Нове",
+    "CONFIRMED": "Підтверджене",
+    "IN_PROGRESS": "У роботі",
+    "READY": "Готове",
+    "COMPLETED": "Завершене",
+    "CANCELLED": "Скасоване",
+}
+PRIORITY_LABELS = {"LOW": "Низький", "NORMAL": "Звичайний", "HIGH": "Високий"}
+templates.env.filters["status_label"] = lambda value: STATUS_LABELS[value]
+templates.env.filters["priority_label"] = lambda value: PRIORITY_LABELS[value]
 
 
 def render(request: Request, name: str, *, status_code: int = 200, **context) -> HTMLResponse:

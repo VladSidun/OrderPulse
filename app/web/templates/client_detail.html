@@ -4,6 +4,6 @@
 <div class="page-heading"><h1>{{ client.name }}</h1><a class="btn btn-primary" href="/clients/{{ client.id }}/edit">Редагувати</a></div>
 <dl class="detail-list">{% for field, label in [('phone','Телефон'),('email','Email'),('address','Адреса'),('note','Примітка')] %}<dt>{{ label }}</dt><dd>{{ client|attr(field) or '—' }}</dd>{% endfor %}</dl>
 <h2>Доступні замовлення клієнта</h2>
-{% if orders %}<ul>{% for order in orders %}<li>{{ order.number }} — {{ order.manager.first_name }} {{ order.manager.last_name }} — {{ order.status.value }} — {{ order.total_amount }} EUR</li>{% endfor %}</ul>{% else %}<p>Доступних замовлень ще немає.</p>{% endif %}
+{% if orders %}<ul>{% for order in orders %}<li><a href="/orders/{{ order.id }}">{{ order.number }}</a> — {{ order.manager.first_name }} {{ order.manager.last_name }} — {{ order.status.value|status_label }} — {{ order.total_amount|money }} EUR</li>{% endfor %}</ul>{% else %}<p>Доступних замовлень ще немає.</p>{% endif %}
 <a href="/clients">До списку клієнтів</a>
 {% endblock %}

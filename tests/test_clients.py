@@ -17,7 +17,7 @@ from app.services import client_service
 from tests.test_authentication import TEST_PASSWORD, TEST_SECRET, login, token
 
 
-@pytest.fixture
+@pytest.fixture(name="business_setup")
 def business_setup(migrated_engine):
     factory = create_session_factory(migrated_engine)
     with factory() as session:
