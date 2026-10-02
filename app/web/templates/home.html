@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="welcome-panel" aria-labelledby="welcome-title">
+  <p class="welcome-label">Робочий простір</p>
+  <h1 id="welcome-title">Облік замовлень</h1>
+  <p class="welcome-description">Система для обліку замовлень і контролю їх статусів.</p>
+  <p class="availability-note">Робочий простір готується до роботи. Керування клієнтами та замовленнями буде доступне після налаштування системи.</p>
+  <dl class="workspace-settings">
+    <div>
+      <dt>Валюта</dt>
+      <dd>{{ currency }}</dd>
+    </div>
+    <div>
+      <dt>Часовий пояс</dt>
+      <dd>{{ timezone }}</dd>
+    </div>
+  </dl>
+</section>
+{% endblock %}

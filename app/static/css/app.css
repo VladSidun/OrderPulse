@@ -1,0 +1,114 @@
+:root {
+  color-scheme: light;
+  --app-ink: #172b45;
+  --app-muted: #53657a;
+  --app-accent: #215cc5;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: #f3f6fa;
+  color: var(--app-ink);
+  font-family: system-ui, sans-serif;
+}
+
+.container {
+  width: min(100% - 2rem, 1080px);
+  margin-inline: auto;
+}
+
+.skip-link {
+  position: absolute;
+  top: -5rem;
+  left: 1rem;
+  z-index: 10;
+  padding: 0.75rem;
+  background: white;
+  color: var(--app-ink);
+}
+
+.skip-link:focus {
+  top: 1rem;
+}
+
+.app-header {
+  padding: 1.25rem 0;
+  background: white;
+  border-bottom: 1px solid #dce4ee;
+}
+
+.app-brand {
+  color: var(--app-ink);
+  font-size: 1.05rem;
+  font-weight: 700;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.app-brand:hover {
+  color: var(--app-accent);
+}
+
+.app-main {
+  padding-block: clamp(2rem, 6vw, 5rem);
+}
+
+.welcome-panel {
+  max-width: 760px;
+  padding: clamp(1.5rem, 5vw, 3rem);
+  background: white;
+  border: 1px solid #dce4ee;
+  border-radius: 1rem;
+}
+
+.welcome-label {
+  margin: 0 0 1rem;
+  color: var(--app-accent);
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+h1 {
+  margin: 0 0 1rem;
+  font-size: clamp(1.8rem, 5vw, 2.75rem);
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.welcome-description,
+.availability-note {
+  color: var(--app-muted);
+  line-height: 1.65;
+}
+
+.availability-note {
+  margin-block: 1.5rem 2rem;
+}
+
+.workspace-settings {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem 3rem;
+  margin: 0;
+  padding-top: 1.5rem;
+  border-top: 1px solid #dce4ee;
+}
+
+.workspace-settings dt {
+  margin-bottom: 0.35rem;
+  color: var(--app-muted);
+  font-size: 0.875rem;
+  font-weight: 400;
+}
+
+.workspace-settings dd {
+  margin: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+a:focus-visible {
+  outline: 3px solid var(--app-accent);
+  outline-offset: 4px;
+}
