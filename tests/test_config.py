@@ -4,6 +4,13 @@ from pydantic import ValidationError
 from app.core.config import Settings, get_settings
 
 
+@pytest.fixture(autouse=True)
+def isolate_settings_environment(monkeypatch):
+    # Each settings test supplies its own inputs, including environment overrides.
+    for field in Settings.model_fields:
+        monkeypatch.delenv(field.upper(), raising=False)
+
+
 def test_settings_load_utf8_environment_file(tmp_path):
     environment_file = tmp_path / ".env"
     environment_file.write_text(
