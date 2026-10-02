@@ -25,6 +25,8 @@ class Settings(BaseSettings):
     app_timezone: str = "Europe/Kyiv"
     currency: Literal["EUR"] = "EUR"
     manager_order_visibility: Literal["all", "assigned"] = "all"
+    default_admin_email: str | None = None
+    default_admin_password: SecretStr | None = None
 
     @field_validator("app_timezone")
     @classmethod
