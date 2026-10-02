@@ -151,3 +151,10 @@ input:focus-visible {
 .search-form .form-select { width: auto; }
 .detail-list dd { white-space: pre-wrap; overflow-wrap: anywhere; }
 .table td { overflow-wrap: anywhere; }
+.status-new { background: #425b76; }
+.status-confirmed { background: #1850a3; }
+.status-in_progress { background: #705400; }
+.status-ready { background: #00636e; }
+.status-completed { background: #14643b; }
+.status-cancelled { background: #9e2433; }
+.page-heading h1 { overflow-wrap: anywhere; }

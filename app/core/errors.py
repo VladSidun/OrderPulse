@@ -20,3 +20,15 @@ class SeedConflict(DomainError):
 
 class NotFound(DomainError):
     status_code = 404
+
+
+class VersionConflict(DomainError):
+    status_code = 409
+
+
+class InputError(DomainError):
+    status_code = 422
+
+    def __init__(self, field: str, message: str):
+        super().__init__(message)
+        self.field = field
