@@ -3,6 +3,7 @@ from pydantic import ValidationError
 
 from app.schemas.client import ClientInput
 from app.schemas.order import ItemInput, OrderInput
+from app.schemas.user import PasswordReset
 from app.web.forms import validation_errors
 
 
@@ -20,6 +21,8 @@ from app.web.forms import validation_errors
             "Сума позиції перевищує місткість numeric(12,2).",
         ),
         (OrderInput, {"client_id": 1, "items": []}, "Додайте щонайменше одну позицію."),
+        (PasswordReset, {"password": "short"}, "Пароль має містити 8–128 символів."),
+        (PasswordReset, {"password": "x" * 129}, "Пароль має містити 8–128 символів."),
         (
             ClientInput,
             {"name": "Клієнт", "email": "private-invalid-value"},
