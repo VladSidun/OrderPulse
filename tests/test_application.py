@@ -79,8 +79,9 @@ def test_application_factories_keep_settings_separate():
 
 
 def test_business_routes_are_not_exposed_before_implementation(client):
-    for path in ("/users/new", "/ready", "/api/v1/orders"):
+    for path in ("/ready", "/api/v1/orders"):
         assert client.get(path).status_code == 404
+    assert client.get("/users/new").status_code == 503
 
 
 def test_authentication_requires_explicit_secret_without_affecting_health(client):

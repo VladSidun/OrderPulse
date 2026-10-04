@@ -2,7 +2,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 
 from app.core.business_time import KYIV, utc_now
-from app.core.dependencies import Administrator, CurrentUser, Database, csrf_token
+from app.core.dependencies import CurrentUser, Database, csrf_token
 from app.core.order_rules import is_overdue
 from app.services import dashboard_service
 from app.web.rendering import STATUS_LABELS, render
@@ -31,9 +31,3 @@ def dashboard(request: Request, session: Database, user: CurrentUser) -> HTMLRes
         is_overdue=is_overdue,
         month=now.astimezone(KYIV).strftime("%m.%Y"),
     )
-
-
-@router.get("/users", response_class=HTMLResponse)
-def users(request: Request, user: Administrator) -> HTMLResponse:
-    csrf_token(request)
-    return render(request, "users.html", active_page="users")

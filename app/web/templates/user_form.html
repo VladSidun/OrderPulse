@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'Редагування користувача' if user_id else 'Новий користувач' }} — {{ app_name }}{% endblock %}
+{% block content %}
+<h1>{{ 'Редагування користувача' if user_id else 'Новий користувач' }}</h1>
+{% if errors %}<div class="alert alert-danger" role="alert">Перевірте введені дані.{% for field, message in errors.items() %}<p>{{ message }}</p>{% endfor %}</div>{% endif %}
+<form method="post" class="entity-form" data-confirm="Зберегти користувача? Зміна доступу відкличе його сесії.">
+<input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+{% for field, label in [('first_name', 'Ім’я'),('last_name','Прізвище')] %}
+<div class="mb-3"><label for="{{ field }}">{{ label }}</label><input class="form-control" id="{{ field }}" name="{{ field }}" value="{{ values.get(field, '') }}" required minlength="2" maxlength="80"{% if errors.get(field) %} aria-invalid="true" aria-describedby="{{ field }}-error"{% endif %}>{% if errors.get(field) %}<p id="{{ field }}-error" class="text-danger">{{ errors[field] }}</p>{% endif %}</div>
+{% endfor %}
+{% if user_id %}<p>Email: {{ email }}</p>{% else %}
+<div class="mb-3"><label for="email">Email</label><input class="form-control" id="email" name="email" type="email" required maxlength="255" value="{{ values.get('email', '') }}">{% if errors.get('email') %}<p class="text-danger">{{ errors.email }}</p>{% endif %}</div>
+<div class="mb-3"><label for="password">Початковий пароль</label><input class="form-control" id="password" name="password" type="password" required minlength="8" maxlength="128" autocomplete="new-password">{% if errors.get('password') %}<p class="text-danger">{{ errors.password }}</p>{% endif %}</div>
+{% endif %}
+<div class="mb-3"><label for="role">Роль</label><select class="form-select" id="role" name="role">{% for key, label in [('MANAGER','Менеджер'),('ADMIN','Адміністратор')] %}<option value="{{ key }}"{% if values.get('role') == key %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+<div class="mb-3"><label><input type="checkbox" name="is_active" value="true"{% if values.get('is_active') %} checked{% endif %}> Активний користувач</label></div>
+<p>Перед деактивацією менеджера або зміною його ролі перепризначте незавершені замовлення. Останній активний адміністратор захищений.</p>
+<button class="btn btn-primary" type="submit" data-confirm="Зберегти зміни користувача? Зміна доступу відкличе його сесії.">Зберегти</button> <a href="/users">Скасувати</a>
+</form>
+{% if user_id %}<section class="entity-form mt-4" aria-labelledby="reset-title"><h2 id="reset-title">Скидання пароля</h2>
+<form method="post" action="/users/{{ user_id }}/password" data-confirm="Скинути пароль і відкликати всі сесії?"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><label for="new-password">Новий пароль</label><input class="form-control" id="new-password" type="password" name="password" required minlength="8" maxlength="128" autocomplete="new-password"><p>Усі сесії користувача будуть відкликані. Передайте пароль користувачу самостійно.</p><button type="submit" class="btn btn-outline-danger" data-confirm="Скинути пароль і відкликати всі сесії?">Скинути пароль</button></form></section>{% endif %}
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', path='js/workflow.js') }}" defer></script>{% endblock %}
+
