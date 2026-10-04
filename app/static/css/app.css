@@ -158,3 +158,11 @@ input:focus-visible {
 .status-completed { background: #14643b; }
 .status-cancelled { background: #9e2433; }
 .page-heading h1 { overflow-wrap: anywhere; }
+.filter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 0 1rem; margin-bottom: 1.5rem; }
+.filter-grid .form-field { min-width: 0; }
+.filter-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; grid-column: 1 / -1; }
+.overdue-badge { background: #9e2433; color: white; }
+.order-table table { min-width: 950px; }
+.table-responsive { overflow-x: auto; }
+.preserved-comment { white-space: pre-wrap; overflow-wrap: anywhere; }
+select:focus-visible, textarea:focus-visible { outline: 3px solid var(--app-accent); outline-offset: 4px; }

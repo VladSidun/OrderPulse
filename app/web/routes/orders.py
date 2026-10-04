@@ -4,15 +4,17 @@ from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse
 from pydantic import ValidationError
 
-from app.core.business_time import local_input, parse_local_deadline
+from app.core.business_time import local_input, parse_local_deadline, utc_now
 from app.core.dependencies import CurrentUser, Database, csrf_token
 from app.core.errors import InputError, InvalidArchive, InvalidStatusTransition, VersionConflict
-from app.core.policies import can_edit_order, require_administrator, require_order_edit
+from app.core.order_rules import is_overdue
+from app.core.policies import can_edit_order, require_order_edit
 from app.models import OrderPriority, OrderStatus, UserRole
-from app.repositories import order_repository
+from app.repositories import order_list_repository, order_repository
 from app.schemas.order import OrderInput, OrderUpdate
+from app.schemas.order_filters import OrderFilters
 from app.schemas.workflow import StatusChange, VersionInput
-from app.services import order_service
+from app.services import order_list_service, order_service
 from app.web.forms import FormValues, validation_errors
 from app.web.rendering import render
 
@@ -55,12 +57,40 @@ def structured_values(flat):
 
 
 @router.get("/orders")
-def orders(request: Request, session: Database, user: CurrentUser, archived: bool = False):
+def orders(request: Request, session: Database, user: CurrentUser):
     csrf_token(request)
-    if archived:
-        require_administrator(user)
-    rows = order_repository.list_recent(session, user, visibility(request), archived=archived)
-    return render(request, "orders.html", active_page="orders", orders=rows, archived=archived)
+    now = utc_now()
+    raw = dict(request.query_params)
+    errors, rows, total, page, pages = {}, [], 0, 1, 1
+    values = OrderFilters().model_dump(mode="json") | raw
+    try:
+        filters = OrderFilters.model_validate(raw)
+        rows, total, page, pages = order_list_service.search(
+            session, user, filters, visibility(request), now=now
+        )
+        values = filters.model_dump(mode="json")
+    except ValidationError as error:
+        errors = validation_errors(error)
+        if any(item["loc"] == () for item in error.errors()):
+            errors["period"] = "Перевірте порядок дат та допустимий календарний період."
+    return render(
+        request,
+        "orders.html",
+        active_page="orders",
+        orders=rows,
+        values=values,
+        errors=errors,
+        total=total,
+        page=page,
+        pages=pages,
+        managers=order_list_repository.managers(session),
+        statuses=list(OrderStatus),
+        priorities=list(OrderPriority),
+        now=now,
+        is_overdue=is_overdue,
+        editable_ids={order.id for order in rows if can_edit_order(user, order)},
+        status_code=422 if errors else 200,
+    )
 
 
 @router.get("/orders/new")
@@ -97,6 +127,7 @@ def detail_response(request, session, user, order_id, *, values=None, errors=Non
         values=values or {},
         errors=errors or {},
         status_code=status_code,
+        overdue=is_overdue(order, utc_now()),
     )
 
 
