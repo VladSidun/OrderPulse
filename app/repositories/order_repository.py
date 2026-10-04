@@ -5,16 +5,16 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 from app.models import Client, Order, OrderNumberCounter, OrderStatusHistory, User, UserRole
 
 
-def visible_statement(user: User, visibility: str):
-    statement = select(Order).where(Order.is_archived.is_(False))
+def visible_statement(user: User, visibility: str, *, archived: bool = False):
+    statement = select(Order).where(Order.is_archived.is_(archived))
     if user.role == UserRole.MANAGER and visibility == "assigned":
         statement = statement.where(Order.manager_id == user.id)
     return statement
 
 
-def list_recent(session: Session, user: User, visibility: str):
+def list_recent(session: Session, user: User, visibility: str, *, archived: bool = False):
     return session.scalars(
-        visible_statement(user, visibility)
+        visible_statement(user, visibility, archived=archived)
         .options(joinedload(Order.client), joinedload(Order.manager))
         .order_by(Order.created_at.desc(), Order.id.desc())
         .limit(20)

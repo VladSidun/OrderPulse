@@ -2,6 +2,8 @@
 {% block title %}Замовлення — {{ app_name }}{% endblock %}
 {% block content %}
 <div class="page-heading"><h1>Замовлення</h1><a class="btn btn-primary" href="/orders/new">Нове замовлення</a></div>
-<p>Останні 20 доступних неархівованих замовлень. Повний список із пошуком і фільтрами буде доступний пізніше.</p>
+{% if current_user.role.value == 'ADMIN' %}<p><a href="/orders">Неархівовані</a> · <a href="/orders?archived=true">Архів</a></p>{% endif %}
+{% if archived %}<h2>Архів</h2>{% endif %}
+<p>Останні 20 доступних {{ 'архівованих' if archived else 'неархівованих' }} замовлень. Повний список із пошуком і фільтрами буде доступний пізніше.</p>
 {% if orders %}<div class="table-responsive"><table class="table"><thead><tr><th>Номер</th><th>Клієнт</th><th>Менеджер</th><th>Статус</th><th>Пріоритет</th><th>Дедлайн</th><th>Сума EUR</th><th>Оновлено</th></tr></thead><tbody>{% for order in orders %}<tr><td><a href="/orders/{{ order.id }}">{{ order.number }}</a></td><td><a href="/clients/{{ order.client_id }}">{{ order.client.name }}</a></td><td>{{ order.manager.first_name }} {{ order.manager.last_name }}</td><td><span class="badge status-{{ order.status.value|lower }}">{{ order.status.value|status_label }}</span></td><td>{{ order.priority.value|priority_label }}</td><td>{{ order.deadline_at|business_time }}</td><td>{{ order.total_amount|money }}</td><td>{{ order.updated_at|business_time }}</td></tr>{% endfor %}</tbody></table></div>{% else %}<p class="alert alert-info">Замовлень ще немає. Створіть перше замовлення.</p>{% endif %}
 {% endblock %}
