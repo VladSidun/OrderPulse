@@ -25,6 +25,13 @@ def csrf_token(request: Request) -> str:
 
 
 async def validate_csrf(request: Request) -> None:
+    # API authenticates first, then performs the same check via its router dependency.
+    if request.url.path.startswith("/api/"):
+        return
+    await check_csrf(request)
+
+
+async def check_csrf(request: Request) -> None:
     if request.method in {"GET", "HEAD", "OPTIONS"}:
         return
     require_sessions(request)

@@ -25,6 +25,7 @@ def get(session: Session, order_id: int, *, lock: bool = False):
     statement = (
         select(Order)
         .where(Order.id == order_id)
+        .execution_options(populate_existing=True)
         .options(
             joinedload(Order.client),
             joinedload(Order.manager),

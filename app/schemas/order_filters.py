@@ -13,8 +13,8 @@ class OrderFilters(BaseModel):
     manager_id: int | None = Field(default=None, gt=0)
     priority: OrderPriority | None = None
     overdue: bool = False
-    start_date: date | None = None
-    end_date: date | None = None
+    start_date: date | None = Field(default=None, ge=date(2, 1, 1))
+    end_date: date | None = Field(default=None, ge=date(2, 1, 1))
     sort: Literal["created_at", "deadline_at", "total_amount"] = "created_at"
     direction: Literal["asc", "desc"] = "desc"
     page: int = Field(default=1, ge=1, le=2147483647)

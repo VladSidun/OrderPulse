@@ -4,7 +4,14 @@ from sqlalchemy.orm import Session, joinedload
 from app.models import Client, Order, User, UserRole
 
 
-def get(session: Session, client_id: int) -> Client | None:
+def get(session: Session, client_id: int, *, lock: bool = False) -> Client | None:
+    if lock:
+        return session.scalar(
+            select(Client)
+            .where(Client.id == client_id)
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        )
     return session.get(Client, client_id)
 
 
