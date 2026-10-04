@@ -11,10 +11,10 @@
 - Перевірка конфігурації: часовий пояс, валюта EUR, режим видимості замовлень.
 - Захист від випадкового увімкнення debug або порожнього секрету в production.
 - Синхронні SQLAlchemy-моделі користувачів, клієнтів, замовлень, позицій, історії статусів і річного лічильника номерів.
-- PostgreSQL 17 у Docker Compose, Alembic initial migration, перевірки constraints та міграцій.
+- Dockerfile з Python 3.12, non-root web і PostgreSQL 17 у Compose; явні Alembic-міграції до запуску web.
 - Вхід і вихід, Argon2id-хеші паролів, підписана cookie-сесія та CSRF-захист.
 - Перевірка активності, ролі й версії авторизації з БД на кожному захищеному запиті.
-- Початковий адміністратор через окрему ідемпотентну CLI-команду.
+- Початковий адміністратор через окрему ідемпотентну CLI-команду; явний development demo seed із 3 користувачами, 5 клієнтами й 16 замовленнями.
 - Клієнти: створення, пошук за назвою/email/телефоном, редагування, деталі та доступні замовлення клієнта.
 - Замовлення: створення з позиціями, автоматичний номер, розрахована сума EUR, деталі, початкова історія й редагування з контролем версії.
 
@@ -50,10 +50,48 @@ HTTP routes -> services -> repositories -> SQLAlchemy / PostgreSQL
 
 ## Вимоги
 
-- Python 3.12.
+- Python 3.12 для venv; для Docker локальний Python не потрібний.
 - Git.
 - Docker Desktop із запущеним Linux Engine та Docker Compose v2 або власна PostgreSQL 17.
 - Інтернет для встановлення залежностей і Bootstrap CDN.
+
+## Запуск через Docker Compose
+
+Потрібні Git, Docker Desktop з Linux Engine та Compose v2. Локальний Python для цього способу не потрібний. Команди виконуйте з кореня репозиторію.
+
+1. Якщо `.env` відсутній, скопіюйте `.env.example`: `Copy-Item .env.example .env`.
+2. Згенеруйте два різні значення командою `docker run --rm python:3.12-slim-bookworm python -c "import secrets; print(secrets.token_urlsafe(32))"`. Запишіть їх у `.env` як `SECRET_KEY` і `POSTGRES_PASSWORD`. Генератор дає URL-безпечні символи. Залиште `APP_ENV=development`, `DEBUG=false`. `DATABASE_URL` для web Compose формує автоматично з `POSTGRES_*`, використовуючи hostname `postgres`; URL для venv описано нижче.
+3. Підготуйте образ і чисту БД; міграції запускаються явно, один раз, перед web:
+
+```powershell
+docker compose config --quiet
+docker compose build web
+docker compose up -d --wait postgres
+docker compose run --rm --no-deps web python -m alembic upgrade head
+docker compose run --rm --no-deps web python -m alembic check
+```
+
+4. Для навчального демо на порожній БД виконайте seed двічі, потім запустіть web:
+
+```powershell
+docker compose run --rm --no-deps web python -m app.db.demo
+docker compose run --rm --no-deps web python -m app.db.demo
+docker compose up -d --wait web
+docker compose ps
+```
+
+Відкрийте [вхід](http://127.0.0.1:8000/login), [health](http://127.0.0.1:8000/health) та [ready](http://127.0.0.1:8000/ready). Очікуються healthy web/postgres, health=`ok`, ready=`ready`. Порти web і PostgreSQL прив’язані до 127.0.0.1; змініть `WEB_PORT` / `POSTGRES_PORT`, якщо вони зайняті. Застосунок працює з UID 10001. Docker build context допускає лише файли продукту, виключаючи `.env`, `.git`, `.venv` і локальні матеріали.
+
+Для власних даних пропустіть demo seed і створіть адміністратора окремо:
+
+```powershell
+docker compose run --rm --no-deps web python -m app.db.seed --email admin@example.com
+docker compose up -d --wait web
+```
+
+Пароль вводиться приховано; альтернативно задайте `DEFAULT_ADMIN_EMAIL` / `DEFAULT_ADMIN_PASSWORD` лише у локальному environment. Команда повторного admin seed не скидає пароль. Demo seed відмовляється від першого завантаження в непорожню БД, включно з уже створеним admin.
+
+Після оновлення коду: `docker compose build web`, явний `alembic upgrade head`, потім `docker compose up -d --wait web`. Міграції не запускаються автоматично кожним worker. Зупинка `docker compose down` зберігає named volume. `docker compose down --volumes` видаляє дані цього Compose-проєкту; застосовуйте лише до власного disposable demo після резервної копії.
 
 ## Локальний запуск у Windows PowerShell
 
@@ -65,6 +103,11 @@ py -3.12 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.lock
 .\.venv\Scripts\python.exe -m pip install --no-deps -e ".[dev]"
 if (-not (Test-Path .env)) { Copy-Item .env.example .env }
+```
+
+Після цього задайте SECRET_KEY і DATABASE_URL, застосуйте міграції, виконайте admin або demo seed за наступними розділами. Потім запустіть web:
+
+```powershell
 .\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --host 127.0.0.1
 ```
 
@@ -74,7 +117,7 @@ if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 
 `requirements.lock` фіксує прямі й транзитивні залежності, включно з інструментами розробки. Після встановлення lock-файла editable install з `--no-deps` додає пакет проєкту без повторного вибору версій. Build backend окремо зафіксований у `pyproject.toml`.
 
-Наведений запуск відкриває системну сторінку та health без підключення до БД. Для входу налаштуйте PostgreSQL, застосуйте міграції, встановіть `SECRET_KEY` та створіть адміністратора за інструкціями нижче.
+Системна сторінка та health доступні без БД; робочі модулі потребують налаштованої PostgreSQL, міграцій і входу.
 
 Для macOS/Linux відповідні команди використовують `python3.12 -m venv .venv` і `.venv/bin/python`. Локальну перевірку цієї версії виконано на Windows / Python 3.12.6.
 
@@ -86,13 +129,14 @@ if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 |---|---|
 | `APP_NAME` | Назва системи, 1–100 символів |
 | `APP_ENV` | `development`, `testing` або `production`; default `development` |
-| `DEBUG` | Default `false`; у development-прикладі `true`; у production лише `false` |
+| `DEBUG` | Default і приклад `false`; у production лише `false` |
 | `SECRET_KEY` | Випадковий ключ підпису сесій, мінімум 32 символи; обов'язковий для входу в будь-якому режимі |
 | `DATABASE_URL` | `postgresql+psycopg://user:password@host:port/database`; потрібний для Alembic та DB-сесій |
 | `POSTGRES_USER` | Користувач локальної PostgreSQL у Compose |
 | `POSTGRES_PASSWORD` | Обов'язковий пароль; приклад залишає його порожнім |
 | `POSTGRES_DB` | Назва локальної БД |
 | `POSTGRES_PORT` | Default `5433`; порт доступний лише на `127.0.0.1` |
+| `WEB_PORT` | Default `8000`; порт web Compose лише на `127.0.0.1` |
 | `SESSION_COOKIE_NAME` | `order_session`; назва cookie авторизації |
 | `APP_TIMEZONE` | `Europe/Kyiv`; перевіряється як IANA time zone |
 | `CURRENCY` | `EUR`; інших валют у базовій версії немає |
@@ -112,7 +156,7 @@ if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 
 ## PostgreSQL та міграції
 
-Compose запускає лише PostgreSQL; web-сервіс і Dockerfile додаються на етапі фінального пакування. FastAPI зараз запускайте у venv.
+Для venv запустіть лише PostgreSQL у Compose; web запустіть Uvicorn на хості. Повний контейнерний запуск наведено вище.
 
 1. Скопіюйте `.env.example` у `.env`, якщо цього ще не зроблено.
 2. Згенеруйте пароль командою генерації секрету вище. Встановіть його у `POSTGRES_PASSWORD` та URL БД. Для цього генератора символи безпечні для URL.
@@ -130,7 +174,7 @@ docker compose up -d --wait postgres
 
 Очікується revision `0002 (head)` та відсутність нових migration operations. Named volume `postgres_data` зберігає дані після `docker compose down`. PostgreSQL ініціалізує користувача, пароль і БД лише на порожньому volume; зміна `.env` не змінює пароль уже створеної БД.
 
-Без Docker: створіть користувача та порожню БД у власній PostgreSQL 17, задайте `DATABASE_URL` з її адресою й виконайте ті самі Alembic-команди. `POSTGRES_*` потрібні лише для Compose. Параметри `DATABASE_URL` мають відповідати `POSTGRES_*`; Compose не синхронізує їх автоматично.
+Без Docker: створіть користувача та порожню БД у власній PostgreSQL 17, задайте `DATABASE_URL` з її адресою й виконайте ті самі Alembic-команди. `POSTGRES_*` потрібні лише для Compose. У venv задавайте URL самостійно; у контейнері Compose формує URL автоматично з `POSTGRES_*`.
 
 Нові зміни схеми:
 
@@ -165,7 +209,7 @@ $env:PYTHONUTF8 = '1'
 
 Команда запитає пароль приховано (8–128 символів). Ім’я та прізвище — 2–80 символів. Пароль не передається в аргументах CLI й не друкується. Для автоматизованого запуску можна задати `DEFAULT_ADMIN_EMAIL` та `DEFAULT_ADMIN_PASSWORD` через environment або ignored `.env`; після створення приберіть початковий пароль із конфігурації. У БД зберігається лише Argon2id-хеш. Команда не запускає міграції автоматично.
 
-Повторний запуск для активного адміністратора з тим самим нормалізованим email зберігає пароль, імена, роль та `auth_version`. Якщо email належить менеджеру або неактивному користувачу, команда завершується з помилкою без підвищення прав чи активації. Одночасні запуски не дублюють користувача. Demo-набір і стандартні demo credentials ще відсутні.
+Повторний запуск для активного адміністратора з тим самим нормалізованим email зберігає пароль, імена, роль та `auth_version`. Якщо email належить менеджеру або неактивному користувачу, команда завершується з помилкою без підвищення прав чи активації. Одночасні запуски не дублюють користувача. Окремий development demo seed описано нижче.
 
 1. Відкрийте [сторінку входу](http://127.0.0.1:8000/login).
 2. Увійдіть даними створеного адміністратора; відкриється `/dashboard`.
@@ -178,9 +222,9 @@ $env:PYTHONUTF8 = '1'
 
 Cookie Starlette підписана, але не зашифрована. Вона містить тільки `user_id`, `auth_version`, час початкового входу та CSRF-токен. Імена, email і паролі до cookie не записуються. HttpOnly і SameSite=Lax діють завжди; Secure — у production. [SessionMiddleware](https://starlette.dev/middleware/#sessionmiddleware)
 
-Вхід діє максимум 8 годин від початкової авторизації; активність у браузері не подовжує цей строк. На кожному захищеному запиті користувач завантажується з БД: відсутній або неактивний користувач, застарілий `auth_version` чи прострочений вхід перенаправляють на login. Logout атомарно збільшує `auth_version` і відкликає всі раніше видані сесії користувача. Майбутні reset password, зміна ролі та деактивація повинні також підвищувати цю версію; їхніх маршрутів наразі немає.
+Вхід діє максимум 8 годин від початкової авторизації; активність у браузері не подовжує цей строк. На кожному захищеному запиті користувач завантажується з БД: відсутній або неактивний користувач, застарілий `auth_version` чи прострочений вхід перенаправляють на login. Logout атомарно збільшує `auth_version` і відкликає всі раніше видані сесії користувача. Скидання пароля, зміна ролі та деактивація також підвищують auth_version і відкликають сесії.
 
-Усі зареєстровані змінювальні HTTP-маршрути захищені CSRF, включно з login/logout. HTML передає hidden `csrf_token`; майбутні JSON-запити з cookie мають передавати `X-CSRF-Token`. Після входу сесія та CSRF-токен оновлюються. Невірний або відсутній токен дає 403 без виконання дії. `next` допускає лише локальний шлях, зокрема відхиляє закодовані зовнішні redirect.
+Усі зареєстровані змінювальні HTTP-маршрути захищені CSRF, включно з login/logout. HTML передає hidden `csrf_token`; JSON-запити з cookie передають `X-CSRF-Token`. Після входу сесія та CSRF-токен оновлюються. Невірний або відсутній токен дає 403 без виконання дії. `next` допускає лише локальний шлях, зокрема відхиляє закодовані зовнішні redirect.
 
 Після помилки входу email зберігається, пароль залишається порожнім; неправильний пароль, невідомий email і неактивність дають однакове повідомлення. HTML авторизації має `Cache-Control: no-store`. Логи входу не містять email чи паролів; для помилок БД журналюється лише тип помилки, а користувач отримує загальне повідомлення без traceback.
 
@@ -262,6 +306,19 @@ erDiagram
 - OrderStatusHistory: старий/новий статус, автор, коментар, час. NULL old_status допускає початковий NEW.
 - OrderNumberCounter: рік та невід'ємне останнє значення; атомарний UPSERT видає номер у транзакції створення замовлення.
 
+```mermaid
+stateDiagram-v2
+    [*] --> NEW
+    NEW --> CONFIRMED
+    CONFIRMED --> IN_PROGRESS
+    IN_PROGRESS --> READY
+    READY --> COMPLETED
+    NEW --> CANCELLED
+    CONFIRMED --> CANCELLED
+    IN_PROGRESS --> CANCELLED
+    READY --> CANCELLED
+```
+
 Статуси: NEW, CONFIRMED, IN_PROGRESS, READY, COMPLETED, CANCELLED. Пріоритети: LOW, NORMAL, HIGH. VARCHAR із named CHECK constraints відхиляє інші значення також у raw SQL. Кількість має бути додатною, ціни й суми — невід'ємними; numeric перевіряє місткість. Сервіси додатково перевіряють email, позиції, місткість сум і права користувача.
 
 FK RESTRICT захищають пов'язаних клієнтів, користувачів і замовлення з історією. Позиції мають FK CASCADE та ORM delete-orphan для атомарної заміни списку; UI/API фізичного видалення сутностей немає. Історію не видаляє ORM cascade; маршрутів її зміни немає. Сервіс вимагає мінімум одну позицію й відхиляє редагування термінального замовлення.
@@ -322,7 +379,7 @@ HTML-шаблони та CSS входять у wheel. Каталог `dist` не
 ```text
 app/
   core/           конфігурація, безпека, dependencies, помилки та політики доступу
-  db/             SQLAlchemy Base, timestamps, engine, сесії та CLI seed
+  db/             SQLAlchemy Base, engine, сесії та окремі admin/demo CLI
   models/         шість ORM-моделей та enum
   schemas/        вхідні схеми авторизації, клієнтів і замовлень
   repositories/   параметризовані запити без commit, лічильник номерів
@@ -334,7 +391,8 @@ app/
 tests/            перевірки
 alembic/          середовище, шаблон і версії міграцій
 alembic.ini       конфігурація міграцій без секретів
-docker-compose.yml PostgreSQL, healthcheck та named volume
+Dockerfile       non-root web із Python 3.12
+docker-compose.yml web + PostgreSQL, healthchecks та named volume
 .github/workflows/ перевірки Python та PostgreSQL у CI
 pyproject.toml    метадані, залежності та налаштування інструментів
 requirements.lock зафіксовані залежності
@@ -372,20 +430,70 @@ API використовує ту саму cookie-сесію й сервіси, 
 
 Часткове оновлення: `{"version": 1, "comment": "Уточнення"}`. Перехід: `{"version": 2, "status": "CONFIRMED", "comment": "Погоджено"}`. Звірте результат з HTML-деталями; повторіть PATCH з попередньою версією — очікується 409. Видаліть CSRF-заголовок — 403, вийдіть із системи — API 401.
 
+## Резервна копія та перевірка відновлення
+
+Збережіть binary dump у контейнері й скопіюйте його; це не залежить від текстового перенаправлення PowerShell:
+
+```powershell
+New-Item -ItemType Directory -Force backups | Out-Null
+docker compose exec -T postgres sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc -f /tmp/orderpulse.dump'
+docker compose cp postgres:/tmp/orderpulse.dump backups/orderpulse.dump
+```
+
+Для перевірки відновлюйте в окрему порожню БД, не поверх робочої:
+
+```powershell
+docker compose exec -T postgres sh -c 'createdb -U "$POSTGRES_USER" order_restore_check'
+docker compose exec -T postgres sh -c 'pg_restore -U "$POSTGRES_USER" -d order_restore_check --exit-on-error /tmp/orderpulse.dump'
+docker compose exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d order_restore_check -c "SELECT count(*) FROM orders"'
+```
+
+У перевірці demo відновлено 3 користувачі, 5 клієнтів, 16 замовлень, 1636.53 EUR і revision 0002. Каталог backups і dump-файли не публікуються.
+
+## Демонстраційний набір
+
+Явна команда `python -m app.db.demo` (у venv: `.\.venv\Scripts\python.exe -m app.db.demo`) завантажує лише в порожню БД вигаданий навчальний набір: 1 ADMIN, 2 MANAGER, 5 клієнтів, 16 замовлень з позиціями, всі статуси, 6 прострочень, майбутні дедлайни й 1 архівне CANCELLED.
+
+| Роль | Email | Пароль лише development |
+|---|---|---|
+| Адміністратор | demo-admin@example.com | Demo-OrderPulse-2026! |
+| Менеджер Олена | demo-manager@example.com | Demo-OrderPulse-2026! |
+| Менеджер Андрій | demo-manager2@example.com | Demo-OrderPulse-2026! |
+
+Повторний seed упізнає набір за незмінною початковою історією й нічого не перезаписує, також після зміни email, назв, паролів або деактивації користувача. Одночасні запуски серіалізуються; помилка відкочує весь набір і лічильник номерів. Seed заборонено при `APP_ENV=production`; ці паролі призначені виключно для локального демо. Для власних даних використовуйте окремий admin seed. Дані demo залишаються після restart/down без `--volumes`.
+
+Початкові контрольні значення: звіт без архіву **15 / 1516.53 EUR**, із архівом **16 / 1636.53 EUR**, за завершенням **2 / 204.00 EUR**. Dashboard: NEW=3, CONFIRMED=3, IN_PROGRESS=3, READY=3, COMPLETED=2, CANCELLED=1; прострочених 6. Кількість «Завершені за місяць» залежить від дати першого seed. Вартість і кількість змінюються після ваших ручних дій; повторний seed їх не скидає.
+
+### Ручна перевірка та демонстрація
+
+1. Виконайте чистий запуск і повторний demo seed за Docker-інструкцією. Увійдіть адміністратором; звірте контрольні кількість і суму, список користувачів та прострочення.
+2. Створіть менеджера через «Адміністрування», клієнта **ТОВ Альфа** та замовлення з позиціями: «Дизайн», 2.00 × 25.50; «Друк», 0.50 × 0.01. Призначте Олену. Очікуються новий номер ORD-YYYY-NNNN, NEW, **51.01 EUR**, початкова історія.
+3. Відкрийте редагування у двох вкладках. Перша зберігає коментар, друга на старій версії отримує 409 без перезапису, збережені поля й посилання на актуальну версію.
+4. Відредагуйте дедлайн на минулий київський час. Перевірте badge, фільтр прострочення та dashboard. Увійдіть відповідальним менеджером і пройдіть NEW → CONFIRMED → IN_PROGRESS → READY → COMPLETED. На кожному кроці зростають версія та історія; після COMPLETED прострочення й кнопки зміни зникають. API-спроба пропустити етап повертає 409; зміна термінального — 403.
+5. Перевірте обидва режими звіту, менеджера, календарні межі та CSV. Без періоду завершене замовлення збільшує completed до **3 / 255.01 EUR**. У CSV має бути та сама кількість/сума; відкрийте UTF-8 і `;` в Excel/Calc.
+6. Архівуйте нове завершене замовлення адміністратором. Воно зникає зі звичайного списку, dashboard і звіту; з’являється в архіві та звіті з «Включити архів». Менеджер не бачить його.
+7. Увійдіть Андрієм: чуже незавершене замовлення видно, але «Редагувати» й зміна статусу відсутні; прямий запит зміни — 403, `/users` — 403. З `MANAGER_ORDER_VISIBILITY=assigned` після `docker compose up -d --force-recreate --wait web` список, деталі, dashboard, звіти та CSV обмежені його замовленнями.
+8. На формах перевірте неправильні дані, збереження полів і порожній пароль. Скасування confirm залишає кнопку доступною. Tab відкриває «Перейти до вмісту». Перевірте 375/768/1440 px, внутрішнє прокручування таблиць і текстову таблицю dashboard при блокуванні Chart.js.
+9. Виконайте seed ще раз після ручної зміни коментаря/пароля: зміни зберігаються. Перезапустіть web і перевірте login/ready; вихід завершує сесію, API після logout повертає 401.
+
 ## Подальші етапи та обмеження
 
-Керування користувачами, звіти/CSV та JSON API реалізовано. Контейнер web і продуктовий demo seed належать до наступних етапів.
+Керування користувачами, звіти/CSV, JSON API, контейнерний web і development demo seed реалізовано.
 
-- Dockerfile, web-сервіс Compose та demo seed наразі відсутні; команда створення початкового admin доступна.
-- Фіксованих demo-акаунтів немає; для входу явно створіть адміністратора зі своїм паролем.
-- CSV перевірено в Microsoft Excel 16 (UTF-8, `;`, кирилиця, кількість, сума). LibreOffice локально не встановлений, відкриття в ньому не підтверджено.
+- CSV перевірено в Microsoft Excel 16 та LibreOffice Calc 7.4 headless у тимчасовому контейнері: UTF-8, `;`, кирилиця, 16 рядків/10 колонок, 1516.53 EUR, 0 формул. GUI LibreOffice у Windows не перевірявся. Параметри імпорту: [офіційна документація LibreOffice](https://help.libreoffice.org/latest/en-GB/text/shared/guide/csv_params.html).
 - Bootstrap та Chart.js завантажуються з CDN; локальні стилі, картки й текстові таблиці доступні без них.
 - Візуальний прохід у браузері не входить до автоматичних HTTP-тестів. Списки, деталі й форми клієнтів/замовлень/користувачів, dashboard та звіти перевірено на 375, 768 і 1440 px, включно з клавіатурою, помилками та відсутнім Chart.js. Після серверної помилки фокус переходить до пояснення; пароль порожній. POST-форми блокують повторне натискання до відповіді, скасоване підтвердження залишає кнопку доступною. Це не робить повторні API POST ідемпотентними.
 - Суми — Decimal у EUR, timestamps — UTC; дати HTML відображаються у Europe/Kyiv. Сума означає вартість замовлення, облік оплат відсутній.
 
 ## Знімки екрана
 
-Знімки функціональних сторінок будуть додані після реалізації відповідних модулів.
+Фактичні сторінки початкового demo-набору:
+
+![Робочий простір](docs/images/dashboard.png)
+
+![Звіт](docs/images/reports.png)
+
+![Форма на мобільній ширині](docs/images/order-form-mobile.png)
 
 ## Можливі майбутні розширення
 

@@ -1,0 +1,14 @@
+# Allow only build inputs. Local credentials and working materials never enter the context.
+**
+!Dockerfile
+!.dockerignore
+!requirements.lock
+!pyproject.toml
+!README.md
+!app/
+!app/**
+!alembic.ini
+!alembic/
+!alembic/**
+**/__pycache__/
+**/*.pyc
