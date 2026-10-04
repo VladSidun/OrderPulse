@@ -1,10 +1,9 @@
 {% extends "base.html" %}
 {% block title %}Адміністрування — {{ app_name }}{% endblock %}
 {% block content %}
-<section class="welcome-panel" aria-labelledby="users-title">
-  <p class="welcome-label">Доступ адміністратора</p>
-  <h1 id="users-title">Адміністрування</h1>
-  <p class="welcome-description">Ви увійшли як адміністратор системи.</p>
-  <p class="availability-note">Створення та редагування користувачів будуть доступні після налаштування модуля керування користувачами.</p>
-</section>
+<div class="page-heading"><h1>Адміністрування</h1><a class="btn btn-primary" href="/users/new">Новий користувач</a></div>
+<p>Зміна ролі, деактивація та скидання пароля відкликають усі сесії користувача. Email після створення незмінний.</p>
+<div class="table-responsive"><table class="table"><caption>Користувачі системи</caption><thead><tr><th scope="col">ПІБ</th><th scope="col">Email</th><th scope="col">Роль</th><th scope="col">Активність</th><th scope="col">Дії</th></tr></thead><tbody>
+{% for row in users %}<tr><td>{{ row.first_name }} {{ row.last_name }}</td><td>{{ row.email }}</td><td>{{ 'Адміністратор' if row.role.value == 'ADMIN' else 'Менеджер' }}</td><td>{{ 'Активний' if row.is_active else 'Неактивний' }}</td><td><a href="/users/{{ row.id }}/edit">Редагувати <span class="visually-hidden">{{ row.email }}</span></a></td></tr>{% else %}<tr><td colspan="5">Користувачів немає.</td></tr>{% endfor %}
+</tbody></table></div>
 {% endblock %}
