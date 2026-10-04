@@ -41,7 +41,9 @@ def validation_errors(error: ValidationError) -> dict[str, str]:
     }
     return {
         ".".join(str(part) for part in item["loc"]): (
-            str(item.get("ctx", {}).get("error"))
+            "Пароль має містити 8–128 символів."
+            if item["loc"] == ("password",) and item["type"] in {"too_short", "too_long"}
+            else str(item.get("ctx", {}).get("error"))
             if str(item.get("ctx", {}).get("error")) in custom_messages
             else messages.get(item["type"], "Перевірте формат і допустиме значення.")
         )

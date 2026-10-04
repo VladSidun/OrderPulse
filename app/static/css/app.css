@@ -174,3 +174,6 @@ select:focus-visible, textarea:focus-visible { outline: 3px solid var(--app-acce
 .chart-container { height: 280px; position: relative; }
 .deadline-list li { margin-bottom: 1rem; overflow-wrap: anywhere; }
 .report-table table { min-width: 1050px; }
+.entity-form, .app-main { min-width: 0; }
+.app-main p, .app-main li, .alert { overflow-wrap: anywhere; }
+.nav-links, .session-controls { min-width: 0; }
