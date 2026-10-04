@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
 KYIV = ZoneInfo("Europe/Kyiv")
@@ -6,6 +6,14 @@ KYIV = ZoneInfo("Europe/Kyiv")
 
 def utc_now() -> datetime:
     return datetime.now(UTC)
+
+
+def calendar_bounds(start: date | None, end: date | None):
+    lower = datetime.combine(start, time.min, KYIV).astimezone(UTC) if start else None
+    upper = (
+        datetime.combine(end + timedelta(days=1), time.min, KYIV).astimezone(UTC) if end else None
+    )
+    return lower, upper
 
 
 def parse_local_deadline(value: str | None) -> datetime | None:

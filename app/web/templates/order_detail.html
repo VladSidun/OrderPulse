@@ -2,6 +2,7 @@
 {% block title %}{{ order.number }} — {{ app_name }}{% endblock %}
 {% block content %}
 <div class="page-heading"><h1>{{ order.number }}</h1>{% if can_edit %}<a class="btn btn-primary" href="/orders/{{ order.id }}/edit">Редагувати</a>{% endif %}</div>
+{% if overdue %}<p><span class="badge overdue-badge">Прострочено</span> Дедлайн минув; замовлення ще не завершене.</p>{% endif %}
 {% if not can_edit %}<p class="alert alert-info">Замовлення доступне лише для перегляду.</p>{% endif %}
 {% if order.is_archived %}<p class="alert alert-info">Замовлення в архіві.</p>{% endif %}
 {% if errors %}<div class="alert alert-danger" role="alert"><p>Дію не виконано. Введені дані збережено.</p>{% for field, error in errors.items() %}<p>{{ error }}</p>{% endfor %}{% if values.get('status') %}<p>Обраний статус: {{ values.get('status') }}</p>{% endif %}{% if values.get('comment') %}<p class="preserved-comment">Ваш коментар: {{ values.get('comment') }}</p>{% endif %}<a href="/orders/{{ order.id }}" target="_blank" rel="noopener">Відкрити актуальну версію в новій вкладці</a></div>{% endif %}
