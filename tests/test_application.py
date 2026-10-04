@@ -78,9 +78,9 @@ def test_application_factories_keep_settings_separate():
         assert "Другий простір" not in first_client.get("/").text
 
 
-def test_business_routes_are_not_exposed_before_implementation(client):
-    for path in ("/ready", "/api/v1/orders"):
-        assert client.get(path).status_code == 404
+def test_business_routes_require_configuration_and_ready_requires_database(client):
+    assert client.get("/ready").status_code == 503
+    assert client.get("/api/v1/orders").status_code == 503
     assert client.get("/users/new").status_code == 503
 
 

@@ -20,6 +20,7 @@ from app.core.policies import (
 )
 from app.models import Client, Order, OrderItem, OrderStatus, OrderStatusHistory, User, UserRole
 from app.repositories import order_repository
+from app.schemas.api import OrderPatch
 from app.schemas.order import OrderInput, OrderUpdate
 from app.schemas.workflow import StatusChange, VersionInput
 
@@ -33,6 +34,35 @@ ALLOWED_TRANSITIONS = {
     OrderStatus.COMPLETED: (),
     OrderStatus.CANCELLED: (),
 }
+
+
+def patch(session: Session, user: User, order_id: int, data: OrderPatch, visibility="all"):
+    try:
+        order = order_repository.get(session, order_id, lock=True)
+        if order is None:
+            raise NotFound("Замовлення не знайдено.")
+        require_order_edit(user, order, visibility)
+        if order.version != data.version:
+            raise VersionConflict("Замовлення вже змінене. Оновіть дані та повторіть дію.")
+        values = {
+            field: getattr(order, field) for field in OrderInput.model_fields if field != "items"
+        }
+        values["items"] = [
+            dict(name=item.name, quantity=item.quantity, unit_price=item.unit_price)
+            for item in order.items
+        ]
+        values.update(data.model_dump(exclude_unset=True))
+        return update(
+            session,
+            user,
+            order_id,
+            OrderUpdate.model_validate(values),
+            visibility,
+            replace_positions="items" in data.model_fields_set,
+        )
+    except Exception:
+        session.rollback()
+        raise
 
 
 def validate_transition(old: OrderStatus, new: OrderStatus) -> None:
@@ -178,7 +208,13 @@ def create(session: Session, user: User, data: OrderInput) -> int:
 
 
 def update(
-    session: Session, user: User, order_id: int, data: OrderUpdate, visibility: str = "all"
+    session: Session,
+    user: User,
+    order_id: int,
+    data: OrderUpdate,
+    visibility: str = "all",
+    *,
+    replace_positions: bool = True,
 ) -> int:
     try:
         order = order_repository.get(session, order_id, lock=True)
@@ -197,7 +233,8 @@ def update(
             data.deadline_at,
             data.comment,
         )
-        replace_items(order, data)
+        if replace_positions:
+            replace_items(order, data)
         order.updated_at = utc_now()
         # Always touch the parent, even when only items change or totals stay equal.
         order.version += 1

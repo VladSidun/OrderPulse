@@ -3,16 +3,18 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import Depends, FastAPI, Request
-from fastapi.responses import RedirectResponse
+from fastapi import Depends, FastAPI, Request, Security
+from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.security import APIKeyCookie
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.exc import SQLAlchemyError
 from starlette.exceptions import HTTPException
 from starlette.middleware.sessions import SessionMiddleware
 
+from app.api.routes import router as api_router
 from app.core.config import Settings, get_settings
 from app.core.dependencies import login_location, validate_csrf
-from app.core.errors import AuthenticationRequired, DomainError
+from app.core.errors import AuthenticationRequired, DomainError, InputError
 from app.core.security import SESSION_MAX_AGE
 from app.db.session import create_database_engine, create_session_factory
 from app.web.rendering import render
@@ -26,6 +28,14 @@ from app.web.routes.workspace import router as workspace_router
 
 logger = logging.getLogger(__name__)
 APP_DIRECTORY = Path(__file__).resolve().parent
+
+
+def error_response(request, status_code, message):
+    if request.url.path.startswith("/api/") or request.url.path == "/ready":
+        return JSONResponse(
+            {"detail": message}, status_code=status_code, headers={"Cache-Control": "no-store"}
+        )
+    return render(request, "error.html", status_code=status_code, message=message)
 
 
 @asynccontextmanager
@@ -65,32 +75,39 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @application.exception_handler(AuthenticationRequired)
     async def authentication_error(request: Request, error: AuthenticationRequired):
+        if request.url.path.startswith("/api/"):
+            return error_response(request, 401, "Увійдіть у систему через /login.")
         return RedirectResponse(
             login_location(request), status_code=303, headers={"Cache-Control": "no-store"}
         )
 
     @application.exception_handler(DomainError)
     async def domain_error(request: Request, error: DomainError):
-        return render(request, "error.html", status_code=error.status_code, message=str(error))
+        status = (
+            400
+            if request.url.path.startswith("/api/") and isinstance(error, InputError)
+            else error.status_code
+        )
+        return error_response(request, status, str(error))
 
     @application.exception_handler(HTTPException)
     async def http_error(request: Request, error: HTTPException):
-        if request.url.path.startswith("/api/"):
-            from fastapi.responses import JSONResponse
-
-            return JSONResponse({"detail": error.detail}, status_code=error.status_code)
         message = error.detail if error.status_code != 404 else "Сторінку не знайдено."
-        return render(request, "error.html", status_code=error.status_code, message=message)
+        return error_response(request, error.status_code, message)
 
     @application.exception_handler(SQLAlchemyError)
     async def database_error(request: Request, error: SQLAlchemyError):
         # Exception text can contain credentials or PII; only log the exception type.
         logger.error("Database operation failed: %s", type(error).__name__)
-        return render(
-            request,
-            "error.html",
-            status_code=503,
-            message="База даних тимчасово недоступна. Повторіть спробу пізніше.",
+        return error_response(
+            request, 503, "База даних тимчасово недоступна. Повторіть спробу пізніше."
+        )
+
+    @application.exception_handler(Exception)
+    async def unexpected_error(request: Request, error: Exception):
+        logger.error("Unexpected operation failure: %s", type(error).__name__)
+        return error_response(
+            request, 500, "Сталася неочікувана помилка. Повторіть спробу пізніше."
         )
 
     application.mount("/static", StaticFiles(directory=APP_DIRECTORY / "static"), name="static")
@@ -101,6 +118,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(orders_router)
     application.include_router(users_router)
     application.include_router(reports_router)
+    application.include_router(
+        api_router,
+        dependencies=[
+            Security(
+                APIKeyCookie(
+                    name=configuration.session_cookie_name,
+                    auto_error=False,
+                    scheme_name="SessionCookie",
+                )
+            )
+        ],
+    )
     return application
 
 
