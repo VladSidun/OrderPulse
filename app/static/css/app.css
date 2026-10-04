@@ -166,3 +166,10 @@ input:focus-visible {
 .table-responsive { overflow-x: auto; }
 .preserved-comment { white-space: pre-wrap; overflow-wrap: anywhere; }
 select:focus-visible, textarea:focus-visible { outline: 3px solid var(--app-accent); outline-offset: 4px; }
+.metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 1rem; margin-block: 1.5rem 2rem; }
+.metric-card, .dashboard-panel { padding: 1.25rem; background: white; border: 1px solid #dce4ee; border-radius: .75rem; min-width: 0; }
+.metric-card h2 { font-size: 1rem; color: var(--app-muted); }
+.metric-value { margin: 0; font-size: 2rem; font-weight: 700; }
+.dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr)); gap: 1rem; margin-bottom: 2rem; }
+.chart-container { height: 280px; position: relative; }
+.deadline-list li { margin-bottom: 1rem; overflow-wrap: anywhere; }

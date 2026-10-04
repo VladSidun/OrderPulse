@@ -16,6 +16,17 @@ def calendar_bounds(start: date | None, end: date | None):
     return lower, upper
 
 
+def month_bounds(now: datetime):
+    local = now.astimezone(KYIV)
+    start = datetime(local.year, local.month, 1, tzinfo=KYIV)
+    end = (
+        datetime(local.year + 1, 1, 1, tzinfo=KYIV)
+        if local.month == 12
+        else datetime(local.year, local.month + 1, 1, tzinfo=KYIV)
+    )
+    return start.astimezone(UTC), end.astimezone(UTC)
+
+
 def parse_local_deadline(value: str | None) -> datetime | None:
     if not value:
         return None
