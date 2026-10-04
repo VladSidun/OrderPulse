@@ -173,3 +173,4 @@ select:focus-visible, textarea:focus-visible { outline: 3px solid var(--app-acce
 .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr)); gap: 1rem; margin-bottom: 2rem; }
 .chart-container { height: 280px; position: relative; }
 .deadline-list li { margin-bottom: 1rem; overflow-wrap: anywhere; }
+.report-table table { min-width: 1050px; }

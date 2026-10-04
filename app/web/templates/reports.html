@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block title %}Звіти — {{ app_name }}{% endblock %}
+{% block content %}
+<h1>Звіти замовлень</h1>
+<p>Календарні дні включно за Europe/Kyiv. Вартість замовлень у EUR; облік оплат не ведеться.</p>
+{% if errors %}<div class="alert alert-danger" role="alert">{% for message in errors.values() %}<p>{{ message }}</p>{% endfor %}</div>{% endif %}
+<form method="get" class="filter-grid" aria-label="Фільтри звіту">
+<div class="form-field"><label for="date_basis">Дата для періоду</label><select id="date_basis" name="date_basis" class="form-select"><option value="created"{% if values.get('date_basis', 'created') == 'created' %} selected{% endif %}>Створення</option><option value="completed"{% if values.get('date_basis') == 'completed' %} selected{% endif %}>Завершення</option></select></div>
+{% for field, label in [('start_date','Початкова дата'),('end_date','Кінцева дата')] %}<div class="form-field"><label for="{{ field }}">{{ label }}</label><input class="form-control" type="date" id="{{ field }}" name="{{ field }}" value="{{ values.get(field, '') }}"></div>{% endfor %}
+<div class="form-field"><label for="status">Статус</label><select class="form-select" id="status" name="status"{% if values.get('date_basis') == 'completed' %} disabled{% endif %}><option value="">Усі статуси</option>{% for status in statuses %}<option value="{{ status.value }}"{% if (values.get('date_basis') == 'completed' and status.value == 'COMPLETED') or (values.get('date_basis', 'created') != 'completed' and values.get('status') == status.value) %} selected{% endif %}>{{ status.value|status_label }}</option>{% endfor %}</select></div>
+<div class="form-field"><label for="manager_id">Менеджер</label><select class="form-select" id="manager_id" name="manager_id"><option value="">Усі менеджери</option>{% for manager in managers %}<option value="{{ manager.id }}"{% if values.get('manager_id') == manager.id|string %} selected{% endif %}>{{ manager.first_name }} {{ manager.last_name }}{% if not manager.is_active %} (неактивний){% endif %}</option>{% endfor %}</select></div>
+<div class="form-field"><label for="page_size">Записів на сторінці</label><select id="page_size" name="page_size" class="form-select">{% for size in [10,20,50] %}<option value="{{ size }}"{% if values.get('page_size', '20') == size|string %} selected{% endif %}>{{ size }}</option>{% endfor %}</select></div>
+{% if is_admin %}<div class="form-field"><label for="include_archived">Включити архів</label><input type="checkbox" id="include_archived" name="include_archived" value="true"{% if values.get('include_archived') in ['true','1','on'] %} checked{% endif %}></div>{% endif %}
+<div class="filter-actions"><button class="btn btn-primary" type="submit">Показати звіт</button> <a href="/reports">Очистити</a></div>
+</form>
+{% if data is defined %}
+{% if filters.date_basis == 'completed' %}<p class="alert alert-info">Період застосовано до події завершення. Статус фіксований: «Завершене».</p>{% endif %}
+<div class="dashboard-grid"><section class="metric-card"><h2>Кількість замовлень</h2><p class="metric-value" data-report="total">{{ data.total }}</p></section><section class="metric-card"><h2>Загальна вартість</h2><p class="metric-value" data-report="amount">{{ data.amount|money }} EUR</p></section></div>
+<p><a class="btn btn-outline-primary" href="{{ export_url }}">Експорт CSV</a> — усі {{ data.total }} відібрані записи, незалежно від сторінки. Контактні дані та коментарі не експортуються.</p>
+<div class="table-responsive report-table"><table class="table"><caption>Відібрані замовлення</caption><thead><tr><th scope="col">Номер</th><th scope="col">Клієнт</th><th scope="col">Менеджер</th><th scope="col">Статус</th><th scope="col">Створено</th><th scope="col">Завершено</th><th scope="col">Вартість EUR</th></tr></thead><tbody>
+{% for order, completed_at in data.rows %}<tr><td><a href="/orders/{{ order.id }}">{{ order.number }}</a></td><td>{{ order.client.name }}</td><td>{{ order.manager.first_name }} {{ order.manager.last_name }}</td><td>{{ order.status.value|status_label }}</td><td>{{ order.created_at|business_time }}</td><td>{{ completed_at|business_time }}</td><td>{{ order.total_amount|money }}</td></tr>{% else %}<tr><td colspan="7">За цими фільтрами замовлень немає.</td></tr>{% endfor %}
+</tbody></table></div>
+<nav aria-label="Сторінки звіту"><p>Сторінка {{ data.page }} з {{ data.pages }}.{% if data.page > 1 %} <a href="{{ page_url(data.page - 1) }}">Попередня</a>{% endif %}{% if data.page < data.pages %} <a href="{{ page_url(data.page + 1) }}">Наступна</a>{% endif %}</p></nav>
+{% endif %}
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', path='js/report-filters.js') }}" defer></script>{% endblock %}
