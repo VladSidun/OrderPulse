@@ -4,13 +4,100 @@ from sqlalchemy.orm import Session
 from sqlalchemy.orm.exc import StaleDataError
 
 from app.core.business_time import KYIV, utc_now
-from app.core.errors import InputError, NotFound, PermissionDenied, VersionConflict
-from app.core.policies import require_active, require_order_edit, require_order_view
+from app.core.errors import (
+    InputError,
+    InvalidArchive,
+    InvalidStatusTransition,
+    NotFound,
+    PermissionDenied,
+    VersionConflict,
+)
+from app.core.policies import (
+    require_active,
+    require_administrator,
+    require_order_edit,
+    require_order_view,
+)
 from app.models import Client, Order, OrderItem, OrderStatus, OrderStatusHistory, User, UserRole
 from app.repositories import order_repository
 from app.schemas.order import OrderInput, OrderUpdate
+from app.schemas.workflow import StatusChange, VersionInput
 
 logger = logging.getLogger(__name__)
+
+ALLOWED_TRANSITIONS = {
+    OrderStatus.NEW: (OrderStatus.CONFIRMED, OrderStatus.CANCELLED),
+    OrderStatus.CONFIRMED: (OrderStatus.IN_PROGRESS, OrderStatus.CANCELLED),
+    OrderStatus.IN_PROGRESS: (OrderStatus.READY, OrderStatus.CANCELLED),
+    OrderStatus.READY: (OrderStatus.COMPLETED, OrderStatus.CANCELLED),
+    OrderStatus.COMPLETED: (),
+    OrderStatus.CANCELLED: (),
+}
+
+
+def validate_transition(old: OrderStatus, new: OrderStatus) -> None:
+    if new not in ALLOWED_TRANSITIONS[old]:
+        raise InvalidStatusTransition("Цей перехід статусу заборонений. Оновіть сторінку.")
+
+
+def change_status(
+    session: Session, user: User, order_id: int, data: StatusChange, visibility: str = "all"
+) -> int:
+    try:
+        order = order_repository.get(session, order_id, lock=True)
+        if order is None:
+            raise NotFound("Замовлення не знайдено.")
+        require_order_edit(user, order, visibility)
+        if order.version != data.version:
+            raise VersionConflict("Замовлення вже змінене. Оновіть сторінку перед повторною дією.")
+        validate_transition(order.status, data.status)
+        old_status, actor_id = order.status, user.id
+        now = utc_now()
+        session.add(
+            OrderStatusHistory(
+                order_id=order_id,
+                old_status=old_status,
+                new_status=data.status,
+                changed_by_id=actor_id,
+                changed_at=now,
+                comment=data.comment,
+            )
+        )
+        order.status, order.updated_at = data.status, now
+        order.version += 1
+        session.commit()
+    except StaleDataError as exc:
+        session.rollback()
+        raise VersionConflict("Замовлення вже змінене. Оновіть сторінку.") from exc
+    except Exception:
+        session.rollback()
+        raise
+    logger.info(
+        "Order status changed: order_id=%s actor_id=%s status=%s", order_id, actor_id, data.status
+    )
+    return order_id
+
+
+def archive(session: Session, user: User, order_id: int, data: VersionInput) -> int:
+    try:
+        require_administrator(user)
+        order = order_repository.get(session, order_id, lock=True)
+        if order is None:
+            raise NotFound("Замовлення не знайдено.")
+        if order.version != data.version:
+            raise VersionConflict("Замовлення вже змінене. Оновіть сторінку перед архівацією.")
+        if order.is_archived or order.status not in {OrderStatus.COMPLETED, OrderStatus.CANCELLED}:
+            raise InvalidArchive("Архівувати можна лише завершене або скасоване замовлення.")
+        order.is_archived, order.updated_at = True, utc_now()
+        order.version += 1
+        session.commit()
+        return order_id
+    except StaleDataError as exc:
+        session.rollback()
+        raise VersionConflict("Замовлення вже змінене. Оновіть сторінку.") from exc
+    except Exception:
+        session.rollback()
+        raise
 
 
 def get(session: Session, user: User, order_id: int, visibility: str = "all") -> Order:

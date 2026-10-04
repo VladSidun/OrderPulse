@@ -26,6 +26,14 @@ class VersionConflict(DomainError):
     status_code = 409
 
 
+class InvalidStatusTransition(DomainError):
+    status_code = 409
+
+
+class InvalidArchive(DomainError):
+    status_code = 409
+
+
 class InputError(DomainError):
     status_code = 422
 

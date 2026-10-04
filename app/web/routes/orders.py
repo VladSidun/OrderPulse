@@ -6,11 +6,12 @@ from pydantic import ValidationError
 
 from app.core.business_time import local_input, parse_local_deadline
 from app.core.dependencies import CurrentUser, Database, csrf_token
-from app.core.errors import InputError, VersionConflict
-from app.core.policies import can_edit_order, require_order_edit
-from app.models import OrderPriority
+from app.core.errors import InputError, InvalidArchive, InvalidStatusTransition, VersionConflict
+from app.core.policies import can_edit_order, require_administrator, require_order_edit
+from app.models import OrderPriority, OrderStatus, UserRole
 from app.repositories import order_repository
 from app.schemas.order import OrderInput, OrderUpdate
+from app.schemas.workflow import StatusChange, VersionInput
 from app.services import order_service
 from app.web.forms import FormValues, validation_errors
 from app.web.rendering import render
@@ -54,10 +55,12 @@ def structured_values(flat):
 
 
 @router.get("/orders")
-def orders(request: Request, session: Database, user: CurrentUser):
+def orders(request: Request, session: Database, user: CurrentUser, archived: bool = False):
     csrf_token(request)
-    rows = order_repository.list_recent(session, user, visibility(request))
-    return render(request, "orders.html", active_page="orders", orders=rows)
+    if archived:
+        require_administrator(user)
+    rows = order_repository.list_recent(session, user, visibility(request), archived=archived)
+    return render(request, "orders.html", active_page="orders", orders=rows, archived=archived)
 
 
 @router.get("/orders/new")
@@ -74,6 +77,10 @@ def create_order(request: Request, session: Database, user: CurrentUser, flat: F
 @router.get("/orders/{order_id}")
 def order_detail(request: Request, order_id: int, session: Database, user: CurrentUser):
     csrf_token(request)
+    return detail_response(request, session, user, order_id)
+
+
+def detail_response(request, session, user, order_id, *, values=None, errors=None, status_code=200):
     order = order_service.get(session, user, order_id, visibility(request))
     return render(
         request,
@@ -81,7 +88,56 @@ def order_detail(request: Request, order_id: int, session: Database, user: Curre
         active_page="orders",
         order=order,
         can_edit=can_edit_order(user, order),
+        transitions=order_service.ALLOWED_TRANSITIONS[order.status],
+        can_archive=(
+            user.role == UserRole.ADMIN
+            and not order.is_archived
+            and order.status in {OrderStatus.COMPLETED, OrderStatus.CANCELLED}
+        ),
+        values=values or {},
+        errors=errors or {},
+        status_code=status_code,
     )
+
+
+@router.post("/orders/{order_id}/status")
+def change_status(
+    request: Request, order_id: int, session: Database, user: CurrentUser, values: FormValues
+):
+    return workflow_form(request, session, user, order_id, values, archive=False)
+
+
+@router.post("/orders/{order_id}/archive")
+def archive_order(
+    request: Request, order_id: int, session: Database, user: CurrentUser, values: FormValues
+):
+    return workflow_form(request, session, user, order_id, values, archive=True)
+
+
+def workflow_form(request, session, user, order_id, values, *, archive):
+    try:
+        if archive:
+            order_service.archive(session, user, order_id, VersionInput.model_validate(values))
+        else:
+            order_service.change_status(
+                session, user, order_id, StatusChange.model_validate(values), visibility(request)
+            )
+    except (ValidationError, InvalidArchive, InvalidStatusTransition, VersionConflict) as error:
+        errors = (
+            validation_errors(error)
+            if isinstance(error, ValidationError)
+            else {getattr(error, "field", "version"): str(error)}
+        )
+        return detail_response(
+            request,
+            session,
+            user,
+            order_id,
+            values=values,
+            errors=errors,
+            status_code=422 if isinstance(error, ValidationError) else 409,
+        )
+    return RedirectResponse(f"/orders/{order_id}", status_code=303)
 
 
 @router.get("/orders/{order_id}/edit")

@@ -387,7 +387,7 @@ def test_html_lifecycle_validation_conflict_and_phase_boundary(order_setup):
         assert f'name="version" value="{version}"' in response.text
         assert "Моя стара форма" not in browser.get(path).text
         for action in ("status", "archive"):
-            assert browser.post(path + "/" + action, data={"csrf_token": csrf}).status_code == 404
+            assert browser.post(path + "/" + action, data={"csrf_token": csrf}).status_code == 422
         assert browser.get("/orders/999999").status_code == 404
         assert browser.delete(path, headers={"X-CSRF-Token": csrf}).status_code == 405
 
