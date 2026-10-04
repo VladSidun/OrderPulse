@@ -19,6 +19,7 @@ from app.web.rendering import render
 from app.web.routes.auth import router as auth_router
 from app.web.routes.clients import router as clients_router
 from app.web.routes.orders import router as orders_router
+from app.web.routes.reports import router as reports_router
 from app.web.routes.system import router
 from app.web.routes.users import router as users_router
 from app.web.routes.workspace import router as workspace_router
@@ -99,6 +100,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(clients_router)
     application.include_router(orders_router)
     application.include_router(users_router)
+    application.include_router(reports_router)
     return application
 
 
