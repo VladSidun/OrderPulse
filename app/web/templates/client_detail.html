@@ -1,9 +1,10 @@
 {% extends 'base.html' %}
 {% block title %}{{ client.name }} — {{ app_name }}{% endblock %}
+{% from "components.html" import heading, badge, empty, metric, timeline %}
 {% block content %}
-<div class="page-heading"><h1>{{ client.name }}</h1><a class="btn btn-primary" href="/clients/{{ client.id }}/edit">Редагувати</a></div>
-<dl class="detail-list">{% for field, label in [('phone','Телефон'),('email','Email'),('address','Адреса'),('note','Примітка')] %}<dt>{{ label }}</dt><dd>{{ client|attr(field) or '—' }}</dd>{% endfor %}</dl>
+{{ heading(client.name, 'Контактна картка клієнта', 'Редагувати', '/clients/' ~ client.id ~ '/edit') }}
+<dl class="detail-list">{% for field, label in [('phone','Телефон'),('email','Email'),('address','Адреса'),('note','Примітка')] %}<div><dt>{{ label }}</dt><dd>{{ client|attr(field) or '—' }}</dd></div>{% endfor %}</dl>
 <h2>Доступні замовлення клієнта</h2>
-{% if orders %}<ul>{% for order in orders %}<li><a href="/orders/{{ order.id }}">{{ order.number }}</a> — {{ order.manager.first_name }} {{ order.manager.last_name }} — {{ order.status.value|status_label }} — {{ order.total_amount|money }} EUR</li>{% endfor %}</ul>{% else %}<p>Доступних замовлень ще немає.</p>{% endif %}
+{% if orders %}<div tabindex="0" role="region" aria-label="Замовлення клієнта, прокручується горизонтально" class="table-responsive"><table class="table"><thead><tr><th scope="col">Номер</th><th scope="col">Менеджер</th><th scope="col">Статус</th><th scope="col">Вартість EUR</th></tr></thead><tbody>{% for order in orders %}<tr><td><a href="/orders/{{ order.id }}">{{ order.number }}</a></td><td>{{ order.manager.first_name }} {{ order.manager.last_name }}</td><td>{{ badge(order.status.value) }}</td><td>{{ order.total_amount|money }}</td></tr>{% endfor %}</tbody></table></div>{% else %}{{ empty('Доступних замовлень ще немає.') }}{% endif %}
 <a href="/clients">До списку клієнтів</a>
 {% endblock %}

@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Вхід — {{ app_name }}{% endblock %}
 {% block content %}
+<div class="login-layout"><aside class="login-story" aria-label="Про робочий простір"><p class="eyebrow">ВАШ РОБОЧИЙ РИТМ</p><h2>Кожне замовлення.<br><span>У вашому ритмі.</span></h2><p>Клієнти, статуси й дедлайни. Увійдіть у простір, де ваша команда тримає все важливе поруч.</p><div class="story-stages"><span class="badge status-new">Нове</span><span class="badge status-in_progress">У роботі</span><span class="badge status-completed">Завершене</span></div></aside>
 <section class="welcome-panel login-panel" aria-labelledby="login-title">
   <p class="welcome-label">Облік замовлень</p>
   <h1 id="login-title">Вхід у систему</h1>
@@ -21,5 +22,5 @@
     </div>
     <button class="btn btn-primary" type="submit">Увійти</button>
   </form>
-</section>
+</section></div>
 {% endblock %}

@@ -1,9 +1,10 @@
 {% extends "base.html" %}
 {% block title %}Адміністрування — {{ app_name }}{% endblock %}
+{% from "components.html" import heading, badge, empty, metric, timeline %}
 {% block content %}
-<div class="page-heading"><h1>Адміністрування</h1><a class="btn btn-primary" href="/users/new">Новий користувач</a></div>
+{{ heading('Користувачі', 'Команда та права доступу.', 'Новий користувач', '/users/new') }}
 <p>Зміна ролі, деактивація та скидання пароля відкликають усі сесії користувача. Email після створення незмінний.</p>
-<div class="table-responsive"><table class="table"><caption>Користувачі системи</caption><thead><tr><th scope="col">ПІБ</th><th scope="col">Email</th><th scope="col">Роль</th><th scope="col">Активність</th><th scope="col">Дії</th></tr></thead><tbody>
+<div tabindex="0" role="region" aria-label="Таблиця, прокручується горизонтально" class="table-responsive"><table class="table"><caption>Користувачі системи</caption><thead><tr><th scope="col">ПІБ</th><th scope="col">Email</th><th scope="col">Роль</th><th scope="col">Активність</th><th scope="col">Дії</th></tr></thead><tbody>
 {% for row in users %}<tr><td>{{ row.first_name }} {{ row.last_name }}</td><td>{{ row.email }}</td><td>{{ 'Адміністратор' if row.role.value == 'ADMIN' else 'Менеджер' }}</td><td>{{ 'Активний' if row.is_active else 'Неактивний' }}</td><td><a href="/users/{{ row.id }}/edit">Редагувати <span class="visually-hidden">{{ row.email }}</span></a></td></tr>{% else %}<tr><td colspan="5">Користувачів немає.</td></tr>{% endfor %}
 </tbody></table></div>
 {% endblock %}

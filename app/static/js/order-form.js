@@ -9,9 +9,11 @@ if (form) {
     const rows = [...items.querySelectorAll("[data-item]")];
     rows.forEach((row, index) => {
       row.querySelector("[data-item-number]").textContent = index + 1;
-      row.querySelectorAll("[data-field]").forEach(input => {
+      row.querySelectorAll("[data-field]").forEach((input) => {
         const label = row.querySelector(`label[for="${input.id}"]`);
-        const error = document.getElementById(input.getAttribute("aria-describedby"));
+        const error = row.querySelector(
+          `[id="${input.getAttribute("aria-describedby")}"]`,
+        );
         input.id = input.name = `items.${index}.${input.dataset.field}`;
         label.htmlFor = input.id;
         if (error) {
@@ -33,7 +35,7 @@ if (form) {
     renumber();
     items.lastElementChild.querySelector("input").focus();
   });
-  items.addEventListener("click", event => {
+  items.addEventListener("click", (event) => {
     const button = event.target.closest("[data-remove-item]");
     if (!button || items.children.length <= 1) return;
     button.closest("[data-item]").remove();

@@ -24,7 +24,7 @@ document.addEventListener("submit", (event) => {
 
 // Back/forward cache can restore disabled controls after successful navigation.
 window.addEventListener("pageshow", () => {
-  document.querySelectorAll('[data-submitting]').forEach((element) => {
+  document.querySelectorAll("[data-submitting]").forEach((element) => {
     if (element.tagName === "BUTTON") element.disabled = false;
     delete element.dataset.submitting;
   });

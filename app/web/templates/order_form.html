@@ -1,20 +1,24 @@
 {% extends 'base.html' %}
 {% block title %}{{ 'Редагування замовлення' if order_id else 'Нове замовлення' }} — {{ app_name }}{% endblock %}
-{% macro field_error(key) %}{% if errors.get(key) %}<p id="{{ key }}-error" class="text-danger">{{ errors[key] }}</p>{% endif %}{% endmacro %}
-{% macro item_row(index, item) %}
+{% from "components.html" import field_error as shared_error %}
+{% macro field_error(key) %}{{ shared_error(key, errors) }}{% endmacro %}
+{% macro item_row(index, item, row_errors=none) %}
+{% set item_errors = errors if row_errors is none else row_errors %}
 <fieldset class="order-item card card-body mb-3" data-item>
   <legend class="h5">Позиція <span data-item-number>{{ index + 1 }}</span></legend>
   {% for field, label in [('name','Назва позиції'),('quantity','Кількість'),('unit_price','Ціна за одиницю, EUR')] %}
   {% set key = 'items.' ~ index ~ '.' ~ field %}
   <div class="mb-2"><label class="form-label" for="{{ key }}">{{ label }}</label>
-  <input class="form-control" id="{{ key }}" name="{{ key }}" data-field="{{ field }}" value="{{ item.get(field, '') }}" required{% if field == 'name' %} maxlength="200"{% else %} type="number" step="0.01" min="{{ '0.01' if field == 'quantity' else '0' }}"{% endif %}{% if errors.get(key) %} aria-invalid="true" aria-describedby="{{ key }}-error"{% endif %}>
-  {{ field_error(key) }}</div>
+  <input class="form-control" id="{{ key }}" name="{{ key }}" data-field="{{ field }}" value="{{ item.get(field, '') }}" required{% if field == 'name' %} maxlength="200"{% else %} type="number" step="0.01" min="{{ '0.01' if field == 'quantity' else '0' }}"{% endif %}{% if item_errors.get(key) %} aria-invalid="true" aria-describedby="{{ key }}-error"{% endif %}>
+  {{ shared_error(key, item_errors) }}</div>
   {% endfor %}
   <button class="btn btn-outline-danger align-self-start" type="button" data-remove-item hidden>Вилучити позицію</button>
+  <noscript><button class="btn btn-outline-danger" type="submit" name="_items_action" value="remove:{{ index }}" formnovalidate>Вилучити позицію {{ index + 1 }}</button></noscript>
 </fieldset>
 {% endmacro %}
+{% from "components.html" import heading, badge, empty %}
 {% block content %}
-<h1>{{ 'Редагування замовлення' if order_id else 'Нове замовлення' }}</h1>
+{{ heading('Редагування замовлення' if order_id else 'Нове замовлення') }}
 {% if errors %}<div class="alert alert-danger" role="alert"><p>Замовлення не збережено. Перевірте введені дані.</p>{% for key, message in errors.items() %}<p>{{ message }}</p>{% endfor %}</div>{% endif %}
 {% if errors.get('version') %}<p><a href="/orders/{{ order_id }}/edit" target="_blank" rel="noopener">Відкрити актуальну версію в новій вкладці</a></p>{% endif %}
 {% if not clients %}<p class="alert alert-info">Спочатку <a href="/clients/new">створіть клієнта</a>.</p>{% endif %}
@@ -22,17 +26,19 @@
 <form method="post" class="entity-form" data-order-form>
 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
 {% if order_id %}<input type="hidden" name="version" value="{{ values.get('version','') }}">{% endif %}
-<div class="mb-3"><label class="form-label" for="client_id">Клієнт *</label><select class="form-select" name="client_id" id="client_id" required{% if errors.get('client_id') %} aria-invalid="true" aria-describedby="client_id-error"{% endif %}><option value="">Оберіть клієнта</option>{% for client in clients %}<option value="{{ client.id }}"{% if values.get('client_id')|string == client.id|string %} selected{% endif %}>{{ client.name }}</option>{% endfor %}</select>{{ field_error('client_id') }}</div>
+<fieldset class="form-section"><legend>Основне</legend><div class="field-grid"><div class="mb-3"><label class="form-label" for="client_id">Клієнт *</label><select class="form-select" name="client_id" id="client_id" required{% if errors.get('client_id') %} aria-invalid="true" aria-describedby="client_id-error"{% endif %}><option value="">Оберіть клієнта</option>{% for client in clients %}<option value="{{ client.id }}"{% if values.get('client_id')|string == client.id|string %} selected{% endif %}>{{ client.name }}</option>{% endfor %}</select>{{ field_error('client_id') }}</div>
 {% if current_user.role.value == 'ADMIN' %}<div class="mb-3"><label class="form-label" for="manager_id">Відповідальний менеджер *</label><select class="form-select" name="manager_id" id="manager_id" required{% if errors.get('manager_id') %} aria-invalid="true" aria-describedby="manager_id-error"{% endif %}><option value="">Оберіть менеджера</option>{% for manager in managers %}<option value="{{ manager.id }}"{% if values.get('manager_id')|string == manager.id|string %} selected{% endif %}>{{ manager.first_name }} {{ manager.last_name }} ({{ manager.email }})</option>{% endfor %}</select>{{ field_error('manager_id') }}</div>{% else %}<p>Відповідальний менеджер: ви.</p>{% endif %}
-<div class="mb-3"><label class="form-label" for="priority">Пріоритет</label><select name="priority" id="priority" class="form-select">{% for priority in priorities %}<option value="{{ priority.value }}"{% if values.get('priority') == priority.value %} selected{% endif %}>{{ priority.value|priority_label }}</option>{% endfor %}</select>{{ field_error('priority') }}</div>
+</div></fieldset><fieldset class="form-section"><legend>Терміни й пріоритет</legend><div class="field-grid"><div class="mb-3"><label class="form-label" for="priority">Пріоритет</label><select name="priority" id="priority" class="form-select">{% for priority in priorities %}<option value="{{ priority.value }}"{% if values.get('priority') == priority.value %} selected{% endif %}>{{ priority.value|priority_label }}</option>{% endfor %}</select>{{ field_error('priority') }}</div>
 <div class="mb-3"><label class="form-label" for="deadline_at">Дедлайн (Europe/Kyiv)</label><input name="deadline_at" id="deadline_at" type="datetime-local" class="form-control" value="{{ values.get('deadline_at','') }}"{% if errors.get('deadline_at') %} aria-invalid="true" aria-describedby="deadline_at-error"{% endif %}>{{ field_error('deadline_at') }}</div>
-<div class="mb-3"><label class="form-label" for="comment">Коментар</label><textarea class="form-control" name="comment" id="comment" maxlength="2000"{% if errors.get('comment') %} aria-invalid="true" aria-describedby="comment-error"{% endif %}>{{ values.get('comment','') }}</textarea>{{ field_error('comment') }}</div>
-<h2>Позиції</h2><p>До 100 позицій. Кількість і ціна — максимум два десяткові знаки. Сервер обчислить суму в EUR після збереження.</p>
+</div></fieldset>
+<fieldset class="form-section"><legend>Позиції</legend><p>До 100 позицій. Кількість і ціна — максимум два десяткові знаки. Сервер обчислить суму в EUR після збереження.</p>
 {{ field_error('items') }}
 <div data-items>{% for item in values.get('items',[]) %}{{ item_row(loop.index0, item) }}{% endfor %}</div>
 <button class="btn btn-outline-secondary mb-3" type="button" data-add-item hidden>Додати позицію</button>
-<template data-item-template>{{ item_row(0, {}) }}</template>
-<div><button class="btn btn-primary" type="submit"{% if not clients or (current_user.role.value == 'ADMIN' and not managers) %} disabled{% endif %}>Зберегти замовлення</button> <a href="{{ '/orders/' ~ order_id if order_id else '/orders' }}">Скасувати</a></div>
+<noscript><p>Додавання й вилучення позицій оновлює лише чернетку форми.</p><button class="btn btn-outline-secondary mb-3" type="submit" name="_items_action" value="add" formnovalidate{% if values.get('items', [])|length >= 100 %} disabled{% endif %}>Додати позицію</button></noscript>
+<template data-item-template>{{ item_row(0, {}, {}) }}</template>
+</fieldset><fieldset class="form-section"><legend>Коментар</legend><div class="mb-3"><label class="form-label" for="comment">Коментар</label><textarea class="form-control" name="comment" id="comment" maxlength="2000"{% if errors.get('comment') %} aria-invalid="true" aria-describedby="comment-error"{% endif %}>{{ values.get('comment','') }}</textarea>{{ field_error('comment') }}</div>
+</fieldset><div class="form-actions"><button class="btn btn-primary" type="submit"{% if not clients or (current_user.role.value == 'ADMIN' and not managers) %} disabled{% endif %}>Зберегти замовлення</button> <a href="{{ '/orders/' ~ order_id if order_id else '/orders' }}">Скасувати</a></div>
 </form>
 {% endblock %}
 {% block scripts %}<script src="{{ url_for('static', path='js/order-form.js') }}" defer></script>{% endblock %}

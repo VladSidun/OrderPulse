@@ -1,19 +1,20 @@
 {% extends "base.html" %}
 {% block title %}Робочий простір — {{ app_name }}{% endblock %}
+{% from "components.html" import heading, badge, empty, metric, timeline %}
 {% block content %}
-<div class="page-heading"><h1>Робочий простір</h1><a class="btn btn-primary" href="/orders/new">Нове замовлення</a></div>
-<p>Вітаємо, {{ current_user.first_name }} {{ current_user.last_name }}. Дані станом на {{ now|business_time }} (Europe/Kyiv).</p>
-<p>Показники охоплюють доступні вам неархівовані замовлення. Вартість — EUR; облік оплат не ведеться.</p>
+{{ heading('Огляд замовлень', 'Усе важливе для вашого робочого дня.', 'Нове замовлення', '/orders/new') }}
+<p class="page-context">Вітаємо, {{ current_user.first_name }} {{ current_user.last_name }}. Дані станом на {{ now|business_time }} (Europe/Kyiv).</p>
+<p class="page-context">Показники охоплюють доступні вам неархівовані замовлення. Вартість — EUR; облік оплат не ведеться.</p>
 <div class="metrics-grid">
 {% for key,label in [('total','Неархівовані замовлення'),('new','Нові'),('in_progress','У роботі'),('ready','Готові'),('completed_month','Завершені за місяць'),('overdue','Прострочені')] %}
-<section class="metric-card" aria-labelledby="metric-{{ key }}"><h2 id="metric-{{ key }}">{{ label }}{% if key == 'completed_month' %} ({{ month }}){% endif %}</h2><p class="metric-value" data-metric="{{ key }}">{{ data[key] }}</p></section>
+{{ metric(key, label ~ (' (' ~ month ~ ')' if key == 'completed_month' else ''), data[key]) }}
 {% endfor %}
 </div>
 <div class="dashboard-grid">
 <section class="dashboard-panel"><h2>Замовлення за статусами</h2>
 {% if data.total %}<div class="chart-container"><canvas id="status-chart" hidden role="img" aria-label="Кількість замовлень за статусами; значення наведені в таблиці нижче"></canvas></div>{% endif %}
 <p id="chart-fallback">Таблиця містить усі значення. Діаграма доступна після завантаження Chart.js.</p>
-<table class="table"><caption>Кількість доступних неархівованих замовлень</caption><thead><tr><th scope="col">Статус</th><th scope="col">Кількість</th></tr></thead><tbody>{% for status,count in data.by_status.items() %}<tr><th scope="row"><span class="badge status-{{ status.value|lower }}">{{ status.value|status_label }}</span></th><td>{{ count }}</td></tr>{% endfor %}</tbody></table>
+<div tabindex="0" role="region" aria-label="Таблиця, прокручується горизонтально" class="table-responsive"><table class="table"><caption>Кількість доступних неархівованих замовлень</caption><thead><tr><th scope="col">Статус</th><th scope="col">Кількість</th></tr></thead><tbody>{% for status,count in data.by_status.items() %}<tr><th scope="row"><span class="badge status-{{ status.value|lower }}">{{ status.value|status_label }}</span></th><td>{{ count }}</td></tr>{% endfor %}</tbody></table></div>
 {% if not data.total %}<p>Замовлень ще немає.</p>{% endif %}
 </section>
 <section class="dashboard-panel"><h2>Найближчі дедлайни</h2><p>До 5 майбутніх дедлайнів незавершених замовлень.</p>
@@ -21,7 +22,7 @@
 </section>
 </div>
 <section class="dashboard-panel"><h2>Останні замовлення</h2><p>До 10 останніх за датою створення.</p>
-{% if data.recent %}<div class="table-responsive"><table class="table"><thead><tr><th scope="col">Номер</th><th scope="col">Клієнт</th><th scope="col">Статус</th><th scope="col">Дедлайн</th><th scope="col">Вартість EUR</th></tr></thead><tbody>{% for order in data.recent %}<tr><td><a href="/orders/{{ order.id }}">{{ order.number }}</a></td><td>{{ order.client.name }}</td><td><span class="badge status-{{ order.status.value|lower }}">{{ order.status.value|status_label }}</span></td><td>{{ order.deadline_at|business_time }}{% if is_overdue(order,now) %}<br><span class="badge overdue-badge">Прострочено</span>{% endif %}</td><td>{{ order.total_amount|money }}</td></tr>{% endfor %}</tbody></table></div>{% else %}<p>Замовлень ще немає. <a href="/orders/new">Створіть перше замовлення</a>.</p>{% endif %}
+{% if data.recent %}<div tabindex="0" role="region" aria-label="Таблиця, прокручується горизонтально" class="table-responsive"><table class="table"><thead><tr><th scope="col">Номер</th><th scope="col">Клієнт</th><th scope="col">Статус</th><th scope="col">Дедлайн</th><th scope="col">Вартість EUR</th></tr></thead><tbody>{% for order in data.recent %}<tr><td><a href="/orders/{{ order.id }}">{{ order.number }}</a></td><td>{{ order.client.name }}</td><td><span class="badge status-{{ order.status.value|lower }}">{{ order.status.value|status_label }}</span></td><td>{{ order.deadline_at|business_time }}{% if is_overdue(order,now) %}<br><span class="badge overdue-badge">Прострочено</span>{% endif %}</td><td>{{ order.total_amount|money }}</td></tr>{% endfor %}</tbody></table></div>{% else %}<p>Замовлень ще немає. <a href="/orders/new">Створіть перше замовлення</a>.</p>{% endif %}
 <a href="/orders">Усі замовлення та фільтри</a>
 </section>
 {% endblock %}

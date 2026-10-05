@@ -1,7 +1,8 @@
 {% extends 'base.html' %}
 {% block title %}Клієнти — {{ app_name }}{% endblock %}
+{% from "components.html" import pagination, heading, badge, empty, metric, timeline %}
 {% block content %}
-<div class="page-heading"><h1>Клієнти</h1><a class="btn btn-primary" href="/clients/new">Створити клієнта</a></div>
+{{ heading('Клієнти', 'Контакти й замовлення вашої команди.', 'Створити клієнта', '/clients/new') }}
 <form method="get" class="search-form">
   <label for="q">Ім’я, email або телефон</label>
   <input id="q" class="form-control" name="q" value="{{ q }}" maxlength="160">
@@ -10,8 +11,8 @@
   <button class="btn btn-outline-primary">Знайти</button><a href="/clients">Скинути</a>
 </form>
 <p>Знайдено: {{ total }}</p>
-{% if clients %}<div class="table-responsive"><table class="table"><thead><tr><th>Назва</th><th>Телефон</th><th>Email</th><th>Дії</th></tr></thead><tbody>
+{% if clients %}<div tabindex="0" role="region" aria-label="Таблиця, прокручується горизонтально" class="table-responsive"><table class="table"><thead><tr><th>Назва</th><th>Телефон</th><th>Email</th><th>Дії</th></tr></thead><tbody>
 {% for client in clients %}<tr><td><a href="/clients/{{ client.id }}">{{ client.name }}</a></td><td>{{ client.phone or '—' }}</td><td>{{ client.email or '—' }}</td><td><a href="/clients/{{ client.id }}/edit">Редагувати</a></td></tr>{% endfor %}
-</tbody></table></div>{% else %}<p class="alert alert-info">Клієнтів не знайдено. Створіть клієнта або змініть пошук.</p>{% endif %}
-<nav aria-label="Сторінки клієнтів">{% if page > 1 %}<a href="{{ request.url.include_query_params(page=page-1, page_size=page_size) }}">Попередня</a>{% endif %} <span>Сторінка {{ page }}</span> {% if page * page_size < total %}<a href="{{ request.url.include_query_params(page=page+1, page_size=page_size) }}">Наступна</a>{% endif %}</nav>
+</tbody></table></div>{% else %}{{ empty('Клієнтів не знайдено.', 'Створіть клієнта або змініть пошук.') }}{% endif %}
+{{ pagination(page, none, request.url.include_query_params(page=page-1, page_size=page_size) if page > 1 else '', request.url.include_query_params(page=page+1, page_size=page_size) if page * page_size < total else '', 'Сторінки клієнтів') }}
 {% endblock %}

@@ -202,6 +202,29 @@ def update_order(
 
 def save_form(request, session, user, flat, order_id=None):
     values = structured_values(flat)
+    # Progressive enhancement: changing draft rows without JS does not save an order.
+    draft_action = values.pop("_items_action", None)
+    if draft_action is not None:
+        errors = {}
+        items = values["items"]
+        if draft_action == "add" and len(items) < 100:
+            items.append({})
+        elif re.fullmatch(r"remove:\d{1,2}", draft_action):
+            index = int(draft_action.split(":")[1])
+            if len(items) > 1 and index < len(items):
+                items.pop(index)
+            else:
+                errors["items"] = "Залиште щонайменше одну позицію."
+        else:
+            errors["items"] = "Список не може містити понад 100 позицій."
+        return form_response(
+            request,
+            session,
+            values,
+            errors,
+            order_id=order_id,
+            status_code=422 if errors else 200,
+        )
     # Keep display data separate so invalid dates and stale versions remain visible.
     payload = dict(values)
     try:
