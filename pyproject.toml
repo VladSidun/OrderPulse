@@ -14,6 +14,13 @@ dependencies = [
     "jinja2==3.1.6",
     "pydantic-settings==2.15.0",
     "tzdata==2026.4",
+    "SQLAlchemy==2.0.54",
+    "alembic==1.20.0",
+    "psycopg[binary]==3.3.6",
+    "pwdlib[argon2]==0.3.1",
+    "itsdangerous==2.2.0",
+    "python-multipart==0.0.32",
+    "email-validator==2.3.0",
 ]
 
 [project.optional-dependencies]
@@ -29,11 +36,12 @@ dev = [
 include = ["app*"]
 
 [tool.setuptools.package-data]
-app = ["web/templates/*.html", "static/css/*.css"]
+app = ["web/templates/*.html", "static/css/*.css", "static/js/*.js", "static/*.svg"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra"
+markers = ["postgres: integration tests requiring TEST_DATABASE_URL"]
 
 [tool.ruff]
 target-version = "py312"

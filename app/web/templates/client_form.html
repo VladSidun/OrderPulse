@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'Редагування' if client_id else 'Новий клієнт' }} — {{ app_name }}{% endblock %}
+{% from "components.html" import heading, badge, empty %}
+{% block content %}
+{{ heading('Редагування клієнта' if client_id else 'Новий клієнт') }}
+{% if errors %}<div class="alert alert-danger" role="alert">Перевірте введені дані.{% for field, message in errors.items() %}<p>{{ field }}: {{ message }}</p>{% endfor %}</div>{% endif %}
+<form method="post" class="entity-form">
+<input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+<fieldset class="form-section"><legend>Контактні дані</legend><div class="field-grid">
+{% for field, label, limit in [('name','Назва / ПІБ',160),('phone','Телефон',50),('email','Email',255),('address','Адреса',255),('note','Примітка',2000)] %}
+<div class="mb-3 {{ 'wide' if field == 'note' else '' }}"><label for="{{ field }}" class="form-label">{{ label }}{% if field == 'name' %} *{% endif %}</label>
+{% if field == 'note' %}<textarea id="{{ field }}" name="{{ field }}" class="form-control" maxlength="{{ limit }}"{% if errors.get(field) %} aria-invalid="true" aria-describedby="{{ field }}-error"{% endif %}>{{ values.get(field, '') }}</textarea>
+{% else %}<input id="{{ field }}" name="{{ field }}" type="{{ 'email' if field == 'email' else 'text' }}" class="form-control" value="{{ values.get(field, '') }}" maxlength="{{ limit }}"{% if field == 'name' %} required minlength="2"{% endif %}{% if errors.get(field) %} aria-invalid="true" aria-describedby="{{ field }}-error"{% endif %}>{% endif %}
+{% if errors.get(field) %}<p id="{{ field }}-error" class="text-danger">{{ errors[field] }}</p>{% endif %}</div>
+{% endfor %}</div></fieldset>
+<button class="btn btn-primary" type="submit">Зберегти</button> <a href="{{ '/clients/' ~ client_id if client_id else '/clients' }}">Скасувати</a>
+</form>
+{% endblock %}

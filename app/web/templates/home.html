@@ -1,20 +1,100 @@
-{% extends "base.html" %}
-
+{% extends "public_base.html" %}
+{% block title %}{{ 'OrderPulse' if app_name == 'Система обліку замовлень' else app_name }} — кожне замовлення у вашому ритмі{% endblock %}
 {% block content %}
-<section class="welcome-panel" aria-labelledby="welcome-title">
-  <p class="welcome-label">Робочий простір</p>
-  <h1 id="welcome-title">Облік замовлень</h1>
-  <p class="welcome-description">Система для обліку замовлень і контролю їх статусів.</p>
-  <p class="availability-note">Робочий простір готується до роботи. Керування клієнтами та замовленнями буде доступне після налаштування системи.</p>
-  <dl class="workspace-settings">
-    <div>
-      <dt>Валюта</dt>
-      <dd>{{ currency }}</dd>
-    </div>
-    <div>
-      <dt>Часовий пояс</dt>
-      <dd>{{ timezone }}</dd>
-    </div>
-  </dl>
-</section>
+
+  <svg class="symbols" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs>
+    <symbol id="pulse" viewBox="0 0 24 24"><path d="M2 12h5l3-8 4 16 3-8h5"/></symbol>
+    <symbol id="arrow" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6"/></symbol>
+    <symbol id="box" viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5 9-5ZM3 8v9l9 5 9-5V8M12 13v9M7.5 5.5l9 5"/></symbol>
+    <symbol id="grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol>
+    <symbol id="users" viewBox="0 0 24 24"><circle cx="9" cy="7" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3M16 4a3 3 0 0 1 0 6M18 14a5 5 0 0 1 3 4v3"/></symbol>
+    <symbol id="chart" viewBox="0 0 24 24"><path d="M4 3v18h17M9 16v-5m5 5V7m5 9V4"/></symbol>
+    <symbol id="clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/></symbol>
+    <symbol id="shield" viewBox="0 0 24 24"><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6l8-3Z"/><path d="m8 12 3 3 5-6"/></symbol>
+    <symbol id="check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="branch" viewBox="0 0 24 24"><circle cx="6" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="8" r="2"/><path d="M6 7v10m0-6c0 4 12 4 12-1"/></symbol>
+    <symbol id="menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+    <symbol id="close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+  </defs></svg>
+  <a class="skip" href="#main-content">Перейти до вмісту</a>
+  <header class="topbar">
+    <nav class="wrap nav" aria-label="Головна навігація">
+      <a class="brand" href="#main-content" aria-label="{{ 'OrderPulse' if app_name == 'Система обліку замовлень' else app_name }} — на початок"><span class="logo"><svg aria-hidden="true"><use href="#pulse"/></svg></span>{{ 'OrderPulse' if app_name == 'Система обліку замовлень' else app_name }}</a>
+      <div class="navlinks" id="navlinks"><a href="#features">Можливості</a><a href="#workflow">Як це працює</a><a href="#team">Для команди</a></div>
+      <div class="nav-actions"><a class="btn secondary" href="{{ url_for('login_page') }}" data-login>Увійти <svg aria-hidden="true"><use href="#arrow"/></svg></a><button class="menu-toggle" type="button" aria-label="Відкрити меню" aria-controls="navlinks" aria-expanded="false" hidden><svg aria-hidden="true"><use href="#menu"/></svg></button></div>
+    </nav>
+  </header>
+  <main id="main-content" tabindex="-1">
+    <section class="wrap hero" aria-labelledby="hero-title">
+      <div class="hero-text">
+        <div><p class="eyebrow"><span class="dot"></span>Робочий простір вашої команди</p><h1 id="hero-title">Кожне замовлення.<br><em>У вашому ритмі.</em></h1></div>
+        <div class="hero-copy"><p>Клієнти, статуси, дедлайни та звіти — в одному робочому просторі для вашої команди.</p><div class="hero-buttons"><a href="/login" class="btn">Увійти в систему <svg aria-hidden="true"><use href="#arrow"/></svg></a><a href="#features" class="text-link">Переглянути можливості <svg aria-hidden="true"><use href="#arrow"/></svg></a></div></div>
+      </div>
+      <div class="preview-label" id="preview"><span><svg aria-hidden="true"><use href="#grid"/></svg>ВАШ РОБОЧИЙ ПРОСТІР</span><span>Демонстраційні дані</span></div>
+      <div class="product" role="region" aria-label="Ілюстрація інтерфейсу з демонстраційними даними">
+        <div class="product-inner">
+          <div class="sidebar" role="group" aria-label="Ілюстрація навігації застосунку">
+            <span class="brand"><span class="logo"><svg aria-hidden="true"><use href="#pulse"/></svg></span>{{ 'OrderPulse' if app_name == 'Система обліку замовлень' else app_name }}</span>
+            <div class="sidebar-nav" aria-hidden="true"><span class="sidebar-item selected"><svg><use href="#grid"/></svg>Огляд</span><span class="sidebar-item"><svg><use href="#box"/></svg>Замовлення</span><span class="sidebar-item"><svg><use href="#users"/></svg>Клієнти</span><span class="sidebar-item"><svg><use href="#chart"/></svg>Звіти</span><span class="sidebar-item"><svg><use href="#shield"/></svg>Користувачі</span></div>
+            <div class="sidebar-foot"><div class="profile"><span class="avatar">ДА</span><div>Демо Адміністратор<small>Адміністратор</small></div></div></div>
+          </div>
+          <div class="workspace">
+            <div class="work-top"><div><h2>Огляд замовлень</h2><p>Усе важливе для робочого дня.</p></div><span class="demo-badge">Демонстраційні дані</span></div>
+            <dl class="kpis"><div class="kpi highlight"><dt>Неархівовані</dt><dd>4</dd></div><div class="kpi"><dt>Нові</dt><dd>1</dd></div><div class="kpi"><dt>У роботі</dt><dd>1</dd></div><div class="kpi"><dt>Готові</dt><dd>1</dd></div><div class="kpi"><dt>Завершені<br>за жовтень</dt><dd>1</dd></div><div class="kpi warning"><dt>Прострочені</dt><dd>1</dd></div></dl>
+            <div class="preview-main">
+              <section class="panel" aria-labelledby="demo-orders-title">
+                <div class="panel-heading"><h3 id="demo-orders-title">Останні замовлення</h3><span>04 жовтня 2026</span></div>
+
+                <div class="table-scroll" tabindex="0" role="region" aria-label="Таблиця демонстраційних замовлень, прокручується горизонтально"><table class="orders-table"><caption class="sr-only">Чотири приклади замовлень у локальному прототипі</caption><thead><tr><th scope="col">Замовлення / клієнт</th><th scope="col">Статус</th><th scope="col">Вартість EUR</th></tr></thead><tbody>
+                  <tr class="selected" data-order="0" data-status="READY"><td><span class="order-select">ORD-2026-0004<span class="client-name">Демо: майстерня «Форма»</span></span></td><td><span class="badge ready">Готове</span></td><td>145.00</td></tr>
+                  <tr data-order="1" data-status="IN_PROGRESS" data-overdue="true"><td><span class="order-select">ORD-2026-0003<span class="client-name">Демо: освітній центр</span></span></td><td><span class="badge progress">У роботі</span><br><span class="badge overdue" style="margin-top:4px">Прострочено</span></td><td>100.00</td></tr>
+                  <tr data-order="2" data-status="NEW"><td><span class="order-select">ORD-2026-0002<span class="client-name">Демо: студія «Палітра»</span></span></td><td><span class="badge new">Нове</span></td><td>130.00</td></tr>
+                  <tr data-order="3" data-status="COMPLETED"><td><span class="order-select">ORD-2026-0001<span class="client-name">Демо: магазин «Вектор»</span></span></td><td><span class="badge done">Завершене</span></td><td>204.00</td></tr>
+                </tbody></table></div>
+                <p class="table-note" id="filter-result">4 приклади · демонстраційна ілюстрація</p>
+              </section>
+              <section class="panel detail" aria-label="Деталі вибраного демонстраційного замовлення">
+                <div class="detail-head"><h3 id="detail-number">ORD-2026-0004</h3><span class="badge ready" id="detail-status">Готове</span></div><p class="detail-client" id="detail-client">Демо: майстерня «Форма»</p>
+                <dl class="detail-meta"><div><dt>Менеджер</dt><dd>Демо Менеджер</dd></div><div><dt>Дедлайн · Київ</dt><dd id="detail-deadline">08.10.2026, 17:00</dd></div></dl>
+                <div class="detail-amount"><span>Вартість замовлення</span><strong id="detail-amount">145.00 <span>EUR</span></strong></div>
+                <ol class="timeline" aria-label="Етапи замовлення"><li class="passed">Нове</li><li class="passed">Підтверджене</li><li class="passed">У роботі</li><li class="passed">Готове</li><li>Завершене</li></ol>
+                <p class="detail-note" id="detail-note">Наступний етап — завершення замовлення.</p>
+              </section>
+            </div>
+            <div class="preview-foot"><span><svg aria-hidden="true"><use href="#shield"/></svg>Доступ визначається роллю користувача</span><span>EUR · Europe/Kyiv · локальна ілюстрація</span></div>
+            <p class="sr-only" role="status" id="demo-announcement"></p>
+          </div>
+        </div>
+      </div>
+      <div class="under-preview"><span><svg aria-hidden="true"><use href="#check"/></svg>Клієнти та позиції</span><span><svg aria-hidden="true"><use href="#check"/></svg>Статуси та історія</span><span><svg aria-hidden="true"><use href="#check"/></svg>Звіти та CSV</span></div>
+    </section>
+    <section class="wrap section" id="features" aria-labelledby="features-title">
+      <div class="section-head"><div><p class="eyebrow">01 / Можливості</p><h2 id="features-title">Менше пошуку.<br>Більше ясності.</h2></div><p>Один простір для даних, які потрібні вам у щоденній роботі.</p></div>
+      <div class="feature-grid">
+        <article class="feature"><div class="feature-icon"><svg aria-hidden="true"><use href="#box"/></svg></div><h3>Замовлення під контролем</h3><p>Зберігайте клієнта, відповідального менеджера, позиції та вартість. Знаходьте потрібне за номером, статусом і пріоритетом.</p><div class="mini"><span>Клієнти</span><span>Позиції</span><span>Пошук і фільтри</span></div></article>
+        <article class="feature light"><div class="feature-icon"><svg aria-hidden="true"><use href="#clock"/></svg></div><h3>Кожен етап — на видноті</h3><p>Перевіряйте поточний статус, найближчі дедлайни та прострочення. Історія показує, хто і коли змінив статус.</p><div class="mini"><span>Статуси</span><span>Дедлайни</span><span>Історія</span></div></article>
+        <article class="feature"><div class="feature-icon"><svg aria-hidden="true"><use href="#chart"/></svg></div><h3>Звіти без зайвих кроків</h3><p>Оберіть період за створенням або завершенням. Перегляньте кількість і вартість замовлень та експортуйте вибірку у CSV.</p><div class="mini"><span>Період</span><span>Вартість EUR</span><span>Експорт CSV</span></div></article>
+      </div>
+    </section>
+    <section class="wrap section" id="workflow" aria-labelledby="workflow-title">
+      <div class="section-head"><div><p class="eyebrow">02 / Як це працює</p><h2 id="workflow-title">Від нового замовлення<br>до завершеного.</h2></div><p>Послідовні статуси допомагають команді розуміти наступний крок.</p></div>
+      <div class="process"><ol>
+        <li><span class="step-num">01</span><h3>Нове</h3><p>Клієнт, позиції та менеджер.</p><svg class="step-icon" aria-hidden="true"><use href="#arrow"/></svg></li>
+        <li><span class="step-num">02</span><h3>Підтверджене</h3><p>Замовлення прийняте.</p><svg class="step-icon" aria-hidden="true"><use href="#arrow"/></svg></li>
+        <li><span class="step-num">03</span><h3>У роботі</h3><p>Команда виконує замовлення.</p><svg class="step-icon" aria-hidden="true"><use href="#arrow"/></svg></li>
+        <li><span class="step-num">04</span><h3>Готове</h3><p>Роботу виконано.</p><svg class="step-icon" aria-hidden="true"><use href="#arrow"/></svg></li>
+        <li><span class="step-num">05</span><h3>Завершене</h3><p>Дані та історія збережені.</p></li>
+      </ol><div class="process-note"><svg aria-hidden="true"><use href="#branch"/></svg><span>Плани змінилися? Замовлення можна скасувати на будь-якому незавершеному етапі.</span></div></div>
+    </section>
+    <section class="wrap section" id="team" aria-labelledby="team-title">
+      <div class="section-head"><div><p class="eyebrow">03 / Для команди</p><h2 id="team-title">Спільний простір.<br>Зрозуміла відповідальність.</h2></div><p>Дві ролі з визначеними правами для щоденної роботи.</p></div>
+      <div class="roles">
+        <article class="role-card"><div class="role-icon"><svg aria-hidden="true"><use href="#shield"/></svg></div><div><h3>Адміністратор</h3><p>Керує командою та бачить повну картину замовлень.</p><ul><li><svg aria-hidden="true"><use href="#check"/></svg>Створення користувачів і керування доступом</li><li><svg aria-hidden="true"><use href="#check"/></svg>Призначення та зміна менеджера</li><li><svg aria-hidden="true"><use href="#check"/></svg>Архів завершених і скасованих замовлень</li></ul></div></article>
+        <article class="role-card"><div class="role-icon"><svg aria-hidden="true"><use href="#users"/></svg></div><div><h3>Менеджер</h3><p>Працює з клієнтами та веде свої замовлення.</p><ul><li><svg aria-hidden="true"><use href="#check"/></svg>Створення й редагування клієнтів</li><li><svg aria-hidden="true"><use href="#check"/></svg>Зміна власних незавершених замовлень</li><li><svg aria-hidden="true"><use href="#check"/></svg>Перегляд доступних замовлень і звітів</li></ul></div></article>
+      </div><p class="roles-note">За замовчуванням менеджер бачить усі неархівовані замовлення, а змінює лише свої. Система також підтримує налаштування видимості тільки призначених замовлень.</p>
+    </section>
+    <section class="wrap cta" aria-labelledby="cta-title"><div><h2 id="cta-title">Ваші замовлення.<br>Єдиний робочий ритм.</h2><p>Відкрийте {{ 'OrderPulse' if app_name == 'Система обліку замовлень' else app_name }} та працюйте з клієнтами, статусами й дедлайнами в одному місці.</p></div><a class="btn" href="{{ url_for('login_page') }}" data-login>Увійти в систему <svg aria-hidden="true"><use href="#arrow"/></svg></a></section>
+  </main>
+  <footer class="wrap footer"><a href="#main-content" class="brand"><span class="logo"><svg aria-hidden="true"><use href="#pulse"/></svg></span>{{ 'OrderPulse' if app_name == 'Система обліку замовлень' else app_name }}</a><p>Облік замовлень для невеликої команди</p><a href="#main-content">На початок ↑</a></footer>
+
 {% endblock %}

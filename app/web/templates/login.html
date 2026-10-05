@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Вхід — {{ app_name }}{% endblock %}
+{% block content %}
+<div class="login-layout"><aside class="login-story" aria-label="Про робочий простір"><p class="eyebrow">ВАШ РОБОЧИЙ РИТМ</p><h2>Кожне замовлення.<br><span>У вашому ритмі.</span></h2><p>Клієнти, статуси й дедлайни. Увійдіть у простір, де ваша команда тримає все важливе поруч.</p><div class="story-stages"><span class="badge status-new">Нове</span><span class="badge status-in_progress">У роботі</span><span class="badge status-completed">Завершене</span></div></aside>
+<section class="welcome-panel login-panel" aria-labelledby="login-title">
+  <p class="welcome-label">Облік замовлень</p>
+  <h1 id="login-title">Вхід у систему</h1>
+  <p class="welcome-description">Введіть дані вашого облікового запису.</p>
+  {% if errors.credentials %}<p class="alert alert-danger" role="alert">{{ errors.credentials }}</p>{% endif %}
+  <form action="{{ url_for('login') }}" method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="next" value="{{ next }}">
+    <div class="form-field">
+      <label for="email">Email</label>
+      <input id="email" name="email" type="email" class="form-control" value="{{ email }}" maxlength="255" required autocomplete="username"{% if errors.email %} aria-invalid="true" aria-describedby="email-error"{% endif %}>
+      {% if errors.email %}<p id="email-error" class="field-error" role="alert">{{ errors.email }}</p>{% endif %}
+    </div>
+    <div class="form-field">
+      <label for="password">Пароль</label>
+      <input id="password" name="password" type="password" class="form-control" minlength="8" maxlength="128" required autocomplete="current-password"{% if errors.password %} aria-invalid="true" aria-describedby="password-error"{% endif %}>
+      {% if errors.password %}<p id="password-error" class="field-error" role="alert">{{ errors.password }}</p>{% endif %}
+    </div>
+    <button class="btn btn-primary" type="submit">Увійти</button>
+  </form>
+</section></div>
+{% endblock %}

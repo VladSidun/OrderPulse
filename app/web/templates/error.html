@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Помилка — {{ app_name }}{% endblock %}
+{% block content %}
+<section class="welcome-panel error-panel" aria-labelledby="error-title">
+  <p class="eyebrow">ORDERPULSE / НЕ ВДАЛОСЯ ВИКОНАТИ ДІЮ</p><h1 id="error-title">Дію не виконано</h1>
+  <p class="welcome-description" role="alert">{{ message }}</p>
+  <a class="btn btn-primary" href="{{ url_for('dashboard') if current_user else url_for('login_page') }}">{{ 'До робочого простору' if current_user else 'До сторінки входу' }}</a>
+</section>
+{% endblock %}

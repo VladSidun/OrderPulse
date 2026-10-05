@@ -1,0 +1,104 @@
+name: Checks
+
+on:
+  push:
+    branches: [main, "feature/**"]
+  pull_request:
+    branches: [main, "feature/**"]
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17.9-bookworm
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: order_tracking_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U test -d order_tracking_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      APP_ENV: testing
+      DEBUG: "false"
+      DATABASE_URL: postgresql+psycopg://test:test@127.0.0.1:5432/order_tracking_test
+      TEST_DATABASE_URL: postgresql+psycopg://test:test@127.0.0.1:5432/order_tracking_test
+      PYTHONUTF8: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install -r requirements.lock
+      - run: python -m pip install --no-deps -e ".[dev]"
+      - run: python -m pip check
+      - run: python -m ruff check .
+      - run: python -m ruff format --check .
+      - run: python -m alembic upgrade head
+      - run: python -m alembic check
+      - run: python -m alembic downgrade -1
+      - run: python -m alembic upgrade head
+      - run: python -m alembic downgrade base
+      - run: python -m alembic upgrade head
+      - run: python -m pytest --cov=app --cov-report=term-missing
+
+  docker-smoke:
+    runs-on: ubuntu-latest
+    env:
+      APP_ENV: testing
+      DEBUG: "false"
+      SECRET_KEY: container-ci-session-key-with-at-least-32-characters
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: container-ci-password
+      POSTGRES_DB: order_tracking_demo
+      POSTGRES_PORT: "5433"
+      WEB_PORT: "8000"
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose config --quiet
+      - run: docker compose build web
+      - run: docker compose up -d --wait postgres
+      - run: docker compose run --rm --no-deps web python -m alembic upgrade head
+      - run: docker compose run --rm --no-deps web python -m alembic check
+      - run: docker compose run --rm --no-deps web python -m app.db.demo
+      - run: docker compose run --rm --no-deps web python -m app.db.demo
+      - run: docker compose up -d --wait web
+      - name: Check container and authenticated HTTP
+        run: |
+          docker compose exec -T web python -c "import os; assert os.getuid() == 10001"
+          python3 - <<'PY'
+          import http.cookiejar
+          import json
+          import re
+          import urllib.parse
+          import urllib.request
+
+          base = 'http://127.0.0.1:8000'
+          browser = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()))
+          for endpoint, expected in [('/health', 'ok'), ('/ready', 'ready')]:
+              assert json.load(browser.open(base + endpoint))['status'] == expected
+          login = browser.open(base + '/login').read().decode()
+          token = re.search(r'name="csrf_token" value="([^"]+)"', login).group(1)
+          data = urllib.parse.urlencode(dict(email='demo-admin@example.com', password='Demo-OrderPulse-2026!', csrf_token=token)).encode()
+          assert browser.open(base + '/login', data).url.endswith('/dashboard')
+          orders = json.load(browser.open(base + '/api/v1/orders'))
+          assert orders['total'] == 15
+          report = browser.open(base + '/reports').read().decode()
+          assert '1516.53 EUR' in report
+          assert 'demo-manager@example.com' in browser.open(base + '/users').read().decode()
+          assert browser.open(base + '/static/js/forms.js').status == 200
+          print('Container login, seed counts, report and static assets verified')
+          PY
+      - if: failure()
+        run: docker compose logs --no-color
+      - if: always()
+        run: docker compose down --volumes

@@ -1,0 +1,27 @@
+:root,
+[data-bs-theme="dark"] {
+  color-scheme: dark;
+  --op-bg: #0b1110;
+  --op-surface: #151d1a;
+  --op-surface-raised: #1c2621;
+  --op-border: #64786b;
+  --op-text: #f2f5ef;
+  --op-muted: #b0bdb3;
+  --op-accent: #c5f566;
+  --op-accent-text: #15220a;
+  --op-mint: #a8d7be;
+  --op-teal: #6dcabd;
+  --op-danger: #f4a99a;
+  --bs-body-bg: var(--op-bg);
+  --bs-body-color: var(--op-text);
+  --bs-secondary-color: var(--op-muted);
+  --bs-border-color: var(--op-border);
+  --bs-tertiary-bg: var(--op-surface-raised);
+  --bs-secondary-bg: var(--op-surface);
+  --bs-link-color: var(--op-accent);
+  --bs-link-hover-color: #ddffa0;
+  --bs-danger-rgb: 244, 169, 154;
+  --app-ink: var(--op-text);
+  --app-muted: var(--op-muted);
+  --app-accent: var(--op-accent);
+}

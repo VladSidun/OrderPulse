@@ -1,23 +1,30 @@
+{% from 'components.html' import icon, brand, banner %}
 <!doctype html>
-<html lang="uk">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{% block title %}{{ app_name }}{% endblock %}</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="{{ url_for('static', path='css/app.css') }}">
-    {% block styles %}{% endblock %}
-  </head>
-  <body>
-    <a class="skip-link" href="#main-content">Перейти до вмісту</a>
-    <header class="app-header">
-      <nav class="container" aria-label="Головна навігація">
-        <a class="app-brand" href="{{ url_for('home') }}">{{ app_name }}</a>
-      </nav>
-    </header>
-    <main id="main-content" class="container app-main" tabindex="-1">
-      {% block content %}{% endblock %}
-    </main>
-    {% block scripts %}{% endblock %}
-  </body>
-</html>
+<html lang="uk" data-bs-theme="dark">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#0b1110">
+<title>{% block title %}{{ app_name }}{% endblock %}</title>
+<link rel="icon" href="{{ url_for('static', path='favicon.svg') }}" type="image/svg+xml">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="{{ url_for('static', path='css/app.css') }}">{% block styles %}{% endblock %}
+</head>
+<body class="{{ 'authenticated' if current_user else 'public' }}">
+<a class="skip-link" href="#main-content">Перейти до вмісту</a>
+{% if current_user %}
+<header class="app-header">
+<a class="app-brand" href="{{ url_for('dashboard') }}">{{ brand(app_name) }}</a>
+<details class="app-menu" open><summary aria-controls="app-navigation">{{ icon('menu') }} Меню</summary>
+<nav id="app-navigation" class="nav-links" aria-label="Головна навігація">
+{% for key,label,symbol in [('dashboard','Огляд','grid'),('orders','Замовлення','box'),('clients','Клієнти','users'),('reports','Звіти','chart')] %}
+<a href="{{ url_for(key) }}"{% if active_page == key %} aria-current="page"{% endif %}>{{ icon(symbol) }}{{ label }}</a>{% endfor %}
+{% if current_user.role.value == 'ADMIN' %}<a href="{{ url_for('users') }}"{% if active_page == 'users' %} aria-current="page"{% endif %}>{{ icon('shield') }}Користувачі</a>{% endif %}
+</nav></details>
+<div class="sidebar-note">Ваш робочий ритм.<br>Усе важливе поруч.</div>
+<div class="session-controls"><span class="user-avatar" aria-hidden="true">{{ current_user.first_name[:1] }}{{ current_user.last_name[:1] }}</span><span class="user-label">{{ current_user.first_name }} {{ current_user.last_name }}<span class="role-label">{{ 'Адміністратор' if current_user.role.value == 'ADMIN' else 'Менеджер' }}</span></span>
+<form action="{{ url_for('logout') }}" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-outline-secondary" type="submit">{{ icon('exit') }}Вийти</button></form></div>
+</header>
+<div class="app-topbar"><span>Робочий простір <span class="topbar-divider">/</span> {{ {'dashboard':'Огляд','orders':'Замовлення','clients':'Клієнти','reports':'Звіти','users':'Користувачі'}.get(active_page|default(''), 'OrderPulse') }}</span><span class="workspace-indicator">{{ icon('shield') }}{{ 'Адміністратор' if current_user.role.value == 'ADMIN' else 'Менеджер' }}</span></div>
+{% else %}<header class="public-header"><a class="app-brand" href="{{ url_for('home') }}">{{ brand(app_name) }}</a><a class="btn btn-outline-secondary" href="{{ url_for('home') }}">На головну {{ icon('arrow') }}</a></header>{% endif %}
+<main id="main-content" class="app-main" tabindex="-1">{% for message in flash_messages|default([]) %}{{ banner(message) }}{% endfor %}{% block content %}{% endblock %}</main>
+<script src="{{ url_for('static', path='js/shell.js') }}" defer></script><script src="{{ url_for('static', path='js/forms.js') }}" defer></script>{% block scripts %}{% endblock %}
+</body></html>

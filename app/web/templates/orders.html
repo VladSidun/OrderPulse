@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block title %}Замовлення — {{ app_name }}{% endblock %}
+{% from "components.html" import pagination, heading, badge, empty, metric, timeline %}
+{% block content %}
+{{ heading('Замовлення', 'Знаходьте потрібне. Контролюйте кожен етап.', 'Нове замовлення', '/orders/new') }}
+{% if current_user.role.value == 'ADMIN' %}<nav class="segment-links" aria-label="Режим списку"><a href="/orders"{% if values.get('archived') not in [true,'true','1'] %} aria-current="page"{% endif %}>Неархівовані</a><a href="/orders?archived=true"{% if values.get('archived') in [true,'true','1'] %} aria-current="page"{% endif %}>Архів</a></nav>{% endif %}
+{% if values.get('archived') in [true, 'true', '1'] %}<h2>Архів</h2>{% endif %}
+{% if errors %}<div class="alert alert-danger" role="alert">{% for field, error in errors.items() %}<p>{{ error }}</p>{% endfor %}</div>{% endif %}
+<form method="get" class="filter-grid" aria-label="Фільтри замовлень">
+  {% if values.get('archived') in [true, 'true', '1'] %}<input type="hidden" name="archived" value="true">{% endif %}
+  <div class="form-field"><label for="q">Номер або клієнт</label><input class="form-control" id="q" name="q" maxlength="200" value="{{ values.get('q', '') }}"></div>
+  <div class="form-field"><label for="filter-status">Статус</label><select class="form-select" id="filter-status" name="status"><option value="">Усі</option>{% for status in statuses %}<option value="{{ status.value }}"{% if values.get('status') == status.value %} selected{% endif %}>{{ status.value|status_label }}</option>{% endfor %}</select></div>
+  <div class="form-field"><label for="manager">Менеджер</label><select class="form-select" id="manager" name="manager_id"><option value="">Усі</option>{% for manager in managers %}<option value="{{ manager.id }}"{% if values.get('manager_id')|string == manager.id|string %} selected{% endif %}>{{ manager.first_name }} {{ manager.last_name }}{% if not manager.is_active %} (неактивний){% endif %}</option>{% endfor %}</select></div>
+  <details class="filter-more"{% if values.get('priority') or values.get('start_date') or values.get('end_date') %} open{% endif %}><summary>Додаткові фільтри та сортування</summary><div class="filter-extra">
+  <div class="form-field"><label for="priority">Пріоритет</label><select class="form-select" id="priority" name="priority"><option value="">Усі</option>{% for priority in priorities %}<option value="{{ priority.value }}"{% if values.get('priority') == priority.value %} selected{% endif %}>{{ priority.value|priority_label }}</option>{% endfor %}</select></div>
+  <div class="form-field"><label for="start-date">Створено від (Europe/Kyiv)</label><input class="form-control" type="date" id="start-date" name="start_date" value="{{ values.get('start_date') or '' }}"{% if errors.get('period') %} aria-invalid="true"{% endif %}></div>
+  <div class="form-field"><label for="end-date">Створено до включно</label><input class="form-control" type="date" id="end-date" name="end_date" value="{{ values.get('end_date') or '' }}"{% if errors.get('period') %} aria-invalid="true"{% endif %}></div>
+  <div class="form-field"><label for="sort">Сортувати за</label><select class="form-select" id="sort" name="sort">{% for field, label in [('created_at','Створенням'),('deadline_at','Дедлайном'),('total_amount','Сумою')] %}<option value="{{ field }}"{% if values.get('sort') == field %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+  <div class="form-field"><label for="direction">Порядок</label><select class="form-select" id="direction" name="direction"><option value="desc"{% if values.get('direction') == 'desc' %} selected{% endif %}>За спаданням</option><option value="asc"{% if values.get('direction') == 'asc' %} selected{% endif %}>За зростанням</option></select></div>
+  <div class="form-field"><label for="page-size">На сторінці</label><select class="form-select" id="page-size" name="page_size">{% for size in [10,20,50] %}<option value="{{ size }}"{% if values.get('page_size')|string == size|string %} selected{% endif %}>{{ size }}</option>{% endfor %}</select></div>
+  </div></details>
+  <div class="filter-actions"><label><input type="checkbox" name="overdue" value="true"{% if values.get('overdue') in [true, 'true', '1'] %} checked{% endif %}> Лише прострочені</label><button class="btn btn-primary" type="submit">Застосувати</button><a href="{{ '/orders?archived=true' if values.get('archived') in [true,'true','1'] else '/orders' }}">Скинути</a></div>
+</form>
+{% if not errors %}
+<p role="status">Знайдено: {{ total }}. Сторінка {{ page }} з {{ pages }}.</p>
+{% if orders %}<div tabindex="0" role="region" aria-label="Таблиця, прокручується горизонтально" class="table-responsive order-table"><table class="table"><thead><tr><th scope="col">Номер</th><th scope="col">Клієнт</th><th scope="col">Менеджер</th><th scope="col">Статус</th><th scope="col">Пріоритет</th><th scope="col">Дедлайн</th><th scope="col">Сума EUR</th><th scope="col">Оновлено</th><th scope="col">Дії</th></tr></thead><tbody>
+{% for order in orders %}<tr><td><a href="/orders/{{ order.id }}">{{ order.number }}</a></td><td><a href="/clients/{{ order.client_id }}">{{ order.client.name }}</a></td><td>{{ order.manager.first_name }} {{ order.manager.last_name }}</td><td><span class="badge status-{{ order.status.value|lower }}">{{ order.status.value|status_label }}</span></td><td>{{ badge(order.priority.value, 'priority') }}</td><td>{{ order.deadline_at|business_time }}{% if is_overdue(order, now) %}<br><span class="badge overdue-badge">Прострочено</span>{% endif %}</td><td>{{ order.total_amount|money }}</td><td>{{ order.updated_at|business_time }}</td><td><a href="/orders/{{ order.id }}">Переглянути</a>{% if order.id in editable_ids %} <a href="/orders/{{ order.id }}/edit">Редагувати</a>{% endif %}</td></tr>{% endfor %}
+</tbody></table></div>{% else %}{{ empty('Замовлень не знайдено.', 'Змініть фільтри або створіть замовлення.') }}{% endif %}
+{{ pagination(page, pages, request.url.include_query_params(page=page-1, page_size=values.page_size) if page > 1 else '', request.url.include_query_params(page=page+1, page_size=values.page_size) if page < pages else '', 'Сторінки замовлень') }}
+{% endif %}
+{% endblock %}

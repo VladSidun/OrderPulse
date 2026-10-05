@@ -78,6 +78,42 @@ def test_application_factories_keep_settings_separate():
         assert "Другий простір" not in first_client.get("/").text
 
 
-def test_business_routes_are_not_exposed_before_implementation(client):
-    for path in ("/login", "/orders", "/clients", "/users", "/ready", "/api/v1/orders"):
-        assert client.get(path).status_code == 404
+def test_business_routes_require_configuration_and_ready_requires_database(client):
+    assert client.get("/ready").status_code == 503
+    assert client.get("/api/v1/orders").status_code == 503
+    assert client.get("/users/new").status_code == 503
+
+
+def test_authentication_requires_explicit_secret_without_affecting_health(client):
+    assert client.get("/login").status_code == 503
+    assert client.get("/health").status_code == 200
+
+
+def test_production_session_cookie_is_secure():
+    settings = Settings(
+        _env_file=None,
+        app_env="production",
+        debug=False,
+        secret_key="production-test-secret-with-at-least-32-characters",
+        database_url=None,
+    )
+    with TestClient(create_app(settings), base_url="https://testserver") as client:
+        response = client.get("/login")
+        assert response.status_code == 200
+        assert "secure" in response.headers["set-cookie"]
+        assert "httponly" in response.headers["set-cookie"]
+        assert "samesite=lax" in response.headers["set-cookie"]
+
+
+def test_login_without_database_returns_friendly_configuration_error():
+    settings = Settings(
+        _env_file=None,
+        app_env="testing",
+        database_url=None,
+        secret_key="test-session-key-with-at-least-32-characters",
+    )
+    with TestClient(create_app(settings)) as client:
+        response = client.get("/dashboard")
+        assert response.status_code == 503
+        assert "DATABASE_URL" in response.text
+        assert client.get("/static/favicon.svg").status_code == 200

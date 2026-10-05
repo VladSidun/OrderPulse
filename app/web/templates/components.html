@@ -1,0 +1,24 @@
+{% macro icon(name) -%}
+<svg class="op-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+{% if name == 'pulse' %}<path d="M2 12h5l3-8 4 16 3-8h5"/>
+{% elif name == 'grid' %}<rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/>
+{% elif name == 'box' %}<path d="m12 3 9 5v9l-9 5-9-5V8l9-5Zm0 10v9M3 8l9 5 9-5M7 5l10 6"/>
+{% elif name == 'users' %}<circle cx="9" cy="8" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3M16 5a3 3 0 0 1 0 6M18 15a5 5 0 0 1 3 5"/>
+{% elif name == 'chart' %}<path d="M3 3v18h18M8 16v-5m5 5V7m5 9V4"/>
+{% elif name == 'shield' %}<path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6l8-3Zm-4 9 3 3 5-6"/>
+{% elif name == 'menu' %}<path d="M4 6h16M4 12h16M4 18h16"/>
+{% elif name == 'exit' %}<path d="M10 4H4v16h6m4-12 4 4-4 4M9 12h12"/>
+{% elif name == 'arrow' %}<path d="M4 12h16m-6-6 6 6-6 6"/>
+{% elif name == 'plus' %}<path d="M12 4v16M4 12h16"/>
+{% elif name == 'clock' %}<circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/>{% endif %}</svg>
+{%- endmacro %}
+{% macro brand(name) %}<span class="brand-mark">{{ icon('pulse') }}</span><span>{{ 'OrderPulse' if name == 'Система обліку замовлень' else name }}</span>{% endmacro %}
+{% macro heading(title, context='', action='', href='') %}<div class="page-heading"><div><p class="eyebrow">ORDERPULSE / РОБОЧИЙ ПРОСТІР</p><h1>{{ title }}</h1>{% if context %}<p class="page-context">{{ context }}</p>{% endif %}</div>{% if action %}<a class="btn btn-primary" href="{{ href }}">{{ icon('arrow' if action == 'Редагувати' else 'plus') }}{{ action }}</a>{% endif %}</div>{% endmacro %}
+{% macro badge(value, kind='status') %}<span class="badge {{ kind }}-{{ value|lower }}">{{ value|status_label if kind == 'status' else value|priority_label }}</span>{% endmacro %}
+{% macro field_error(key, errors) %}{% if errors.get(key) %}<p id="{{ key }}-error" class="field-error" role="alert">{{ errors[key] }}</p>{% endif %}{% endmacro %}
+{% macro empty(title, text='') %}<div class="empty-state">{{ icon('box') }}<h2>{{ title }}</h2>{% if text %}<p>{{ text }}</p>{% endif %}</div>{% endmacro %}
+{% macro metric(key, label, value) %}<section class="metric-card metric-{{ key }}" aria-labelledby="metric-{{ key }}"><div class="metric-head"><h2 id="metric-{{ key }}">{{ label }}</h2>{{ icon('clock' if key == 'overdue' else 'box') }}</div><p class="metric-value" data-metric="{{ key }}">{{ value }}</p></section>{% endmacro %}
+{% macro timeline(events) %}<ol class="history-timeline">{% for event in events %}<li><span class="timeline-date">{{ event.changed_at|business_time }}</span><div><span class="badge status-{{ event.new_status.value|lower }}">{{ event.new_status.value|status_label }}</span><p>{{ event.changed_by.first_name }} {{ event.changed_by.last_name }}</p>{% if event.comment %}<p class="preserved-comment">{{ event.comment }}</p>{% endif %}</div></li>{% endfor %}</ol>{% endmacro %}
+
+{% macro pagination(page, pages, previous='', following='', label='Сторінки') %}<nav class="pagination-bar" aria-label="{{ label }}">{% if previous %}<a href="{{ previous }}">Попередня</a>{% endif %}<span>Сторінка {{ page }}{% if pages %} з {{ pages }}{% endif %}</span>{% if following %}<a href="{{ following }}">Наступна</a>{% endif %}</nav>{% endmacro %}
+{% macro banner(message, kind='info') %}<p class="alert alert-{{ kind }}" role="{{ 'alert' if kind == 'danger' else 'status' }}">{{ message }}</p>{% endmacro %}
